@@ -11,3 +11,14 @@ $ sbt
 ```
 
 Once server is started, send medication mapping input strings to "http://localhost:8080/medications" as JSON.
+
+Example:
+val jsonString = """
+[{
+    "fullName": "\"INSULIN ASPART 100 UNIT/ML SC SOLN\"",
+    "fullName": "\"ONDANSETRON HCL 4 MG/2ML INJECTION SOLN\"",
+    "fullName": "\"sodium chloride 0.9% -\""
+}]
+"""
+
+
