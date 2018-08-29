@@ -2,7 +2,7 @@ val ScalatraVersion = "2.6.3"
 
 organization := "edu.upenn"
 
-name := "Drivetrain Web Interface"
+name := "Dashboard"
 
 version := "0.1.0-SNAPSHOT"
 

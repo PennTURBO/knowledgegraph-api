@@ -27,6 +27,8 @@ import org.scalatra.json._
 
 import scala.collection.mutable.ArrayBuffer
 
+case class MedLookupResult(medFullName: String, mappedTerm: String, ranking: Int)
+case class MedFullName(fullName: List[String])
 
 class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
   protected implicit val jsonFormats: Formats = DefaultFormats
@@ -42,6 +44,14 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
   post("/medications")
   {
         val medsToLookup: String = request.body
+        val parsedResult = parse(medsToLookup)
+        val extractedResult = parsedResult.extract[List[MedFullName]]
+        var fullNameString: String = ""
+        for (nameList <- extractedResult) 
+        {
+            val fullNamesAsList: List[String] = nameList.fullName
+            for (name <- fullNamesAsList) fullNameString += name
+        }
         
         var cxn: RepositoryConnection = null
         var repository: Repository = null
@@ -67,7 +77,7 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
               ?fullName ?expandedName ?rxnMapping ?rank
               where
               {
-                  Values ?fullName {"""+medsToLookup+"""}
+                  Values ?fullName {"""+fullNameString+"""}
                   graph mydata:wes_pds__med_standard.csv 
                   {
                       ?standard a mydata:medStandard ;
@@ -119,7 +129,4 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
             repoManager.shutDown()
         }
   }
-  
-  case class MedLookupResult(medFullName: String, mappedTerm: String, ranking: Int)
-  case class medLookupInput(key: String, value: String)
 }
