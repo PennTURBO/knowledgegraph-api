@@ -27,7 +27,7 @@ import org.scalatra.json._
 
 import scala.collection.mutable.ArrayBuffer
 
-case class MedLookupResult(medFullName: String, mappedTerm: String, ranking: Int)
+case class MedLookupResult(medFullName: String, mappedTerm: String)
 case class MedFullName(fullName: List[String])
 
 class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
@@ -45,13 +45,9 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
   {
         val medsToLookup: String = request.body
         val parsedResult = parse(medsToLookup)
-        val extractedResult = parsedResult.extract[List[MedFullName]]
-        var fullNameString: String = ""
-        for (nameList <- extractedResult) 
-        {
-            val fullNamesAsList: List[String] = nameList.fullName
-            for (name <- fullNamesAsList) fullNameString += name
-        }
+        val extractedResult = parsedResult.extract[MedFullName]
+        
+        var fullNameString: String = extractedResult.fullName.mkString("\"","\"\"","\"")
         
         var cxn: RepositoryConnection = null
         var repository: Repository = null
@@ -74,7 +70,7 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
               PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
               PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
               select 
-              ?fullName ?expandedName ?rxnMapping ?rank
+              ?fullName ?expandedName ?rxnMapping
               where
               {
                   Values ?fullName {"""+fullNameString+"""}
@@ -97,7 +93,7 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
                   {
                       ?searchRes rdf:type mydata:Row ;
                                  mydata:order ?expandedName ;
-                      		   mydata:rank ?rank .
+                      		   mydata:rank "1" .
                   } 
                   graph mydata:RxnIfAvailable 
                   {
@@ -115,10 +111,11 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
             while (result.hasNext)
             {
                  val bindingSet: BindingSet = result.next()
+                 val fullNameStr: String = bindingSet.getBinding("fullName").toString
+                 val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
                  listToReturn += 
-                   MedLookupResult(bindingSet.getBinding("fullName").toString, 
-                       bindingSet.getBinding("rxnMapping").toString, 
-                       bindingSet.getBinding("rank").toString.split("\"")(1).toInt)
+                   MedLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
+                       medMappedStr.substring(11, medMappedStr.size-2))
             }
             listToReturn
         }
