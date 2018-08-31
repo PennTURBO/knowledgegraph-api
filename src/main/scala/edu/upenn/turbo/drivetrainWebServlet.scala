@@ -59,6 +59,7 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
             repoManager.initialize()
             repository = repoManager.getRepository("med_orders_ncbo_mappings")
             cxn = repository.getConnection()
+            //println("string for query: " + fullNameString)
 
             val query = """
             	PREFIX mydata: <http://example.com/resource/>
