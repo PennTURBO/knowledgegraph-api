@@ -24,6 +24,7 @@ import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.rio.RDFFormat
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
+import com.fasterxml.jackson.core.JsonParseException
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -41,90 +42,98 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
   
   }
   
-  post("/medications")
+  post("/medications/orderNameLookup")
   {
         val medsToLookup: String = request.body
-        val parsedResult = parse(medsToLookup)
-        val extractedResult = parsedResult.extract[MedFullName]
-        
-        var fullNameString: String = extractedResult.fullName.mkString("\"","\"\"","\"")
-        
-        var cxn: RepositoryConnection = null
-        var repository: Repository = null
-        var repoManager: RemoteRepositoryManager = null
+        var extractedResult: Option[MedFullName] = None : Option[MedFullName]
         try
         {
-            repoManager = new RemoteRepositoryManager("http://turbo-prd-db01.pmacs.upenn.edu:7200/")
-            repoManager.setUsernameAndPassword("hfree", "ObibIsTheBest")
-            repoManager.initialize()
-            repository = repoManager.getRepository("med_orders_ncbo_mappings")
-            cxn = repository.getConnection()
-            //println("string for query: " + fullNameString)
-
-            val query = """
-            	PREFIX mydata: <http://example.com/resource/>
-              PREFIX graphBuilder: <http://graphBuilder.org/>
-              PREFIX turbo: <http://transformunify.org/ontologies/>
-              PREFIX obo: <http://purl.obolibrary.org/obo/>
-              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-              PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-              PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
-              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-              select 
-              ?fullName ?expandedName ?rxnMapping
-              where
-              {
-                  Values ?fullName {"""+fullNameString+"""}
-                  graph mydata:wes_pds__med_standard.csv 
-                  {
-                      ?standard a mydata:medStandard ;
-                                mydata:PK_MEDICATION_ID ?fkmi ;
-                                mydata:FULL_NAME ?fullName .
-                      optional {
-                          ?standard  mydata:RXNORM ?rxnval .
-                      }
-                  }
-                  graph mydata:med_standard_FULL_NAME_query_expansion 
-                  {
-                      ?extension rdf:type mydata:Row ;
-                                 mydata:PK_MEDICATION_ID ?fkmi ;
-                                 mydata:expanded.query ?expandedName .
-                  }
-                  graph mydata:med_standard_FULL_NAME_bioportal_search 
-                  {
-                      ?searchRes rdf:type mydata:Row ;
-                                 mydata:order ?expandedName ;
-                      		   mydata:rank "1" .
-                  } 
-                  graph mydata:RxnIfAvailable 
-                  {
-                      ?searchRes mydata:RxnIfAvailable ?rxnFromBioportalMapping ;
-                                 mydata:RxnAvailable "true"^^xsd:boolean .
-                  }
-                  BIND(uri(concat("http://purl.bioontology.org/ontology/RXNORM/", ?rxnval)) AS ?rxnFromDataset)
-                  BIND(If(BOUND(?rxnFromDataset), ?rxnFromDataset, ?rxnFromBioportalMapping) AS ?rxnMapping)
-              }
-            """
-            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
-            val result: TupleQueryResult = tupleQuery.evaluate()
-            var listToReturn: ArrayBuffer[MedLookupResult] = ArrayBuffer[MedLookupResult]()
+            val parsedResult = parse(medsToLookup)
+            extractedResult = Some(parsedResult.extract[MedFullName])
             
-            while (result.hasNext)
-            {
-                 val bindingSet: BindingSet = result.next()
-                 val fullNameStr: String = bindingSet.getBinding("fullName").toString
-                 val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
-                 listToReturn += 
-                   MedLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
-                       medMappedStr.substring(11, medMappedStr.size-2))
-            }
-            listToReturn
+            var fullNameString: String = extractedResult.get.fullName.mkString("\"","\"\"","\"")
+        
+          var cxn: RepositoryConnection = null
+          var repository: Repository = null
+          var repoManager: RemoteRepositoryManager = null
+          try
+          {
+              repoManager = new RemoteRepositoryManager("http://turbo-prd-db01.pmacs.upenn.edu:7200/")
+              repoManager.setUsernameAndPassword("hfree", "ObibIsTheBest")
+              repoManager.initialize()
+              repository = repoManager.getRepository("med_orders_ncbo_mappings")
+              cxn = repository.getConnection()
+              //println("string for query: " + fullNameString)
+  
+              val query = """
+              	PREFIX mydata: <http://example.com/resource/>
+                PREFIX graphBuilder: <http://graphBuilder.org/>
+                PREFIX turbo: <http://transformunify.org/ontologies/>
+                PREFIX obo: <http://purl.obolibrary.org/obo/>
+                PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                select 
+                ?fullName ?expandedName ?rxnMapping
+                where
+                {
+                    Values ?fullName {"""+fullNameString+"""}
+                    graph mydata:wes_pds__med_standard.csv 
+                    {
+                        ?standard a mydata:medStandard ;
+                                  mydata:PK_MEDICATION_ID ?fkmi ;
+                                  mydata:FULL_NAME ?fullName .
+                        optional {
+                            ?standard  mydata:RXNORM ?rxnval .
+                        }
+                    }
+                    graph mydata:med_standard_FULL_NAME_query_expansion 
+                    {
+                        ?extension rdf:type mydata:Row ;
+                                   mydata:PK_MEDICATION_ID ?fkmi ;
+                                   mydata:expanded.query ?expandedName .
+                    }
+                    graph mydata:med_standard_FULL_NAME_bioportal_search 
+                    {
+                        ?searchRes rdf:type mydata:Row ;
+                                   mydata:order ?expandedName ;
+                        		   mydata:rank "1" .
+                    } 
+                    graph mydata:RxnIfAvailable 
+                    {
+                        ?searchRes mydata:RxnIfAvailable ?rxnFromBioportalMapping ;
+                                   mydata:RxnAvailable "true"^^xsd:boolean .
+                    }
+                    BIND(uri(concat("http://purl.bioontology.org/ontology/RXNORM/", ?rxnval)) AS ?rxnFromDataset)
+                    BIND(If(BOUND(?rxnFromDataset), ?rxnFromDataset, ?rxnFromBioportalMapping) AS ?rxnMapping)
+                }
+              """
+              val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
+              val result: TupleQueryResult = tupleQuery.evaluate()
+              var listToReturn: ArrayBuffer[MedLookupResult] = ArrayBuffer[MedLookupResult]()
+              
+              while (result.hasNext)
+              {
+                   val bindingSet: BindingSet = result.next()
+                   val fullNameStr: String = bindingSet.getBinding("fullName").toString
+                   val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
+                   listToReturn += 
+                     MedLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
+                         medMappedStr.substring(11, medMappedStr.size-2))
+              }
+              listToReturn
+          }
+          finally
+          {
+              cxn.close()
+              repository.shutDown()
+              repoManager.shutDown()
+          }
         }
-        finally
+        catch
         {
-            cxn.close()
-            repository.shutDown()
-            repoManager.shutDown()
+            case e: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
         }
   }
 }

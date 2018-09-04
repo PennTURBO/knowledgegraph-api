@@ -1,0 +1,45 @@
+#%RAML 1.0
+---
+title: TURBO Dashboard API
+baseURI: turbo-dev-app01.pmacs.upenn.edu:{port}/
+version: 0.0.1
+
+/medications/orderNameLookup:
+  post: 
+    queryParameters:
+      medicationOrderName: 
+        displayName: fullName
+        type: JSON String Array
+        description: list of unmapped medication order names
+        example: {"fullName":["INSULIN ASPART 100 UNIT/ML SC SOLN", "ONDANSETRON HCL 4 MG/2ML INJECTION SOLN", "sodium chloride 0.9% -"]}
+        required: true
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                """
+                [
+				    {
+				        "medFullName": "INSULIN ASPART 100 UNIT/ML SC SOLN",
+				        "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/3432"
+				    },
+				    {
+				        "medFullName": "ONDANSETRON HCL 4 MG/2ML INJECTION SOLN",
+				        "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/13141"
+				    },
+				    {
+				        "medFullName": "sodium chloride 0.9% -",
+				        "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/3129"
+				    }
+				]
+				"""
+		  400: 
+		    body:
+		      application/json
+		        example:
+		          """
+		          {
+    				"message": "Unable to parse JSON"
+				  }
+				  """
