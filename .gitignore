@@ -67,3 +67,9 @@ jrebel.lic
 
 # paulp script
 /.lib/
+
+# properties file
+*.properties
+
+# precompiled files
+*.jar

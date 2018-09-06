@@ -25,21 +25,92 @@ import org.eclipse.rdf4j.rio.RDFFormat
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
+import java.util.Properties
+import java.io.FileInputStream
 
 import scala.collection.mutable.ArrayBuffer
 
 case class MedLookupResult(medFullName: String, mappedTerm: String)
 case class MedFullName(fullName: List[String])
+case class OntologyTerm(ontologyTerm: List[String])
+case class OntologyLookupResult(ontologyTerm: String, meds: String)
 
-class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
+class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
+{
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
       contentType = formats("json")
   }
-  get("/") 
-  {
   
+  post("/medications/getOrderNamesFromClassname")
+  {
+      val classesToLookup: String = request.body
+      var extractedResult: Option[OntologyTerm] = None : Option[OntologyTerm]
+      try
+      {
+        val parsedResult = parse(classesToLookup)
+        extractedResult = Some(parsedResult.extract[OntologyTerm])
+          
+        var fullNameString: String = extractedResult.get.ontologyTerm.mkString("\"","\"\"","\"")
+      
+        var cxn: RepositoryConnection = null
+        var repository: Repository = null
+        var repoManager: RemoteRepositoryManager = null
+        try
+        {
+            repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+            repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+            repoManager.initialize()
+            repository = repoManager.getRepository(getFromProperties("repository"))
+            cxn = repository.getConnection()
+  
+            val query = """
+            	PREFIX mydata: <http://example.com/resource/>
+              PREFIX graphBuilder: <http://graphBuilder.org/>
+              PREFIX turbo: <http://transformunify.org/ontologies/>
+              PREFIX obo: <http://purl.obolibrary.org/obo/>
+              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+              PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+              PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
+              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+              select 
+              ?ontologyTerm ?orderName
+              where
+              {
+                  Values ?ontologyTerm {"""+fullNameString+"""}
+                  graph mydata:wes_pds__med_standard.csv 
+                  {
+
+                  }
+              }
+            """
+            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
+            val result: TupleQueryResult = tupleQuery.evaluate()
+            var listToReturn: ArrayBuffer[OntologyLookupResult] = ArrayBuffer[OntologyLookupResult]()
+            
+            while (result.hasNext)
+            {
+                 val bindingSet: BindingSet = result.next()
+                 val fullNameStr: String = bindingSet.getBinding("fullName").toString
+                 val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
+                 listToReturn += 
+                   OntologyLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
+                       medMappedStr.substring(11, medMappedStr.size-2))
+            }
+            listToReturn
+        }
+        finally
+        {
+            cxn.close()
+            repository.shutDown()
+            repoManager.shutDown()
+        }
+      }
+      catch
+      {
+          case e: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+      }
   }
   
   post("/medications/orderNameLookup")
@@ -58,12 +129,11 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
           var repoManager: RemoteRepositoryManager = null
           try
           {
-              repoManager = new RemoteRepositoryManager("http://turbo-prd-db01.pmacs.upenn.edu:7200/")
-              repoManager.setUsernameAndPassword("hfree", "ObibIsTheBest")
+              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
               repoManager.initialize()
-              repository = repoManager.getRepository("med_orders_ncbo_mappings")
+              repository = repoManager.getRepository(getFromProperties("repository"))
               cxn = repository.getConnection()
-              //println("string for query: " + fullNameString)
   
               val query = """
               	PREFIX mydata: <http://example.com/resource/>
@@ -135,5 +205,14 @@ class drivetrainWebServlet extends ScalatraServlet with JacksonJsonSupport {
         {
             case e: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
         }
+  }
+  
+  def getFromProperties(key: String, file: String = "dashboard.properties"): String =
+  {
+       val input: FileInputStream = new FileInputStream(file)
+       val props: Properties = new Properties()
+       props.load(input)
+       input.close()
+       props.getProperty(key)
   }
 }
