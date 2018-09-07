@@ -43,7 +43,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       contentType = formats("json")
   }
   
-  post("/medications/getOrderNamesFromClassname")
+  post("/medications/ontologyTermLookup")
   {
       val classesToLookup: String = request.body
       var extractedResult: Option[OntologyTerm] = None : Option[OntologyTerm]
@@ -52,7 +52,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
         val parsedResult = parse(classesToLookup)
         extractedResult = Some(parsedResult.extract[OntologyTerm])
           
-        var fullNameString: String = extractedResult.get.ontologyTerm.mkString("\"","\"\"","\"")
+        var rxNormString: String = extractedResult.get.ontologyTerm.mkString("<","><",">")
       
         var cxn: RepositoryConnection = null
         var repository: Repository = null
@@ -65,38 +65,18 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
             repository = repoManager.getRepository(getFromProperties("repository"))
             cxn = repository.getConnection()
   
-            val query = """
-            	PREFIX mydata: <http://example.com/resource/>
-              PREFIX graphBuilder: <http://graphBuilder.org/>
-              PREFIX turbo: <http://transformunify.org/ontologies/>
-              PREFIX obo: <http://purl.obolibrary.org/obo/>
-              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-              PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-              PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
-              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-              select 
-              ?ontologyTerm ?orderName
-              where
-              {
-                  Values ?ontologyTerm {"""+fullNameString+"""}
-                  graph mydata:wes_pds__med_standard.csv 
-                  {
-
-                  }
-              }
-            """
-            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
+            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, getOntologyTermLookupQuery(rxNormString))
             val result: TupleQueryResult = tupleQuery.evaluate()
             var listToReturn: ArrayBuffer[OntologyLookupResult] = ArrayBuffer[OntologyLookupResult]()
             
             while (result.hasNext)
             {
                  val bindingSet: BindingSet = result.next()
-                 val fullNameStr: String = bindingSet.getBinding("fullName").toString
-                 val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
+                 val rxNormString: String = bindingSet.getBinding("rxNormTerm").toString
+                 val fullNameString: String = bindingSet.getBinding("fullName").toString
                  listToReturn += 
-                   OntologyLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
-                       medMappedStr.substring(11, medMappedStr.size-2))
+                   OntologyLookupResult(rxNormString.substring(11), 
+                       fullNameString.substring(10, fullNameString.length-2))
             }
             listToReturn
         }
@@ -119,11 +99,9 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
         var extractedResult: Option[MedFullName] = None : Option[MedFullName]
         try
         {
-            val parsedResult = parse(medsToLookup)
-            extractedResult = Some(parsedResult.extract[MedFullName])
-            
-            var fullNameString: String = extractedResult.get.fullName.mkString("\"","\"\"","\"")
-        
+          val parsedResult = parse(medsToLookup)
+          extractedResult = Some(parsedResult.extract[MedFullName])
+          var fullNameString: String = extractedResult.get.fullName.mkString("\"","\"\"","\"")
           var cxn: RepositoryConnection = null
           var repository: Repository = null
           var repoManager: RemoteRepositoryManager = null
@@ -135,51 +113,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repository = repoManager.getRepository(getFromProperties("repository"))
               cxn = repository.getConnection()
   
-              val query = """
-              	PREFIX mydata: <http://example.com/resource/>
-                PREFIX graphBuilder: <http://graphBuilder.org/>
-                PREFIX turbo: <http://transformunify.org/ontologies/>
-                PREFIX obo: <http://purl.obolibrary.org/obo/>
-                PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                select 
-                ?fullName ?expandedName ?rxnMapping
-                where
-                {
-                    Values ?fullName {"""+fullNameString+"""}
-                    graph mydata:wes_pds__med_standard.csv 
-                    {
-                        ?standard a mydata:medStandard ;
-                                  mydata:PK_MEDICATION_ID ?fkmi ;
-                                  mydata:FULL_NAME ?fullName .
-                        optional {
-                            ?standard  mydata:RXNORM ?rxnval .
-                        }
-                    }
-                    graph mydata:med_standard_FULL_NAME_query_expansion 
-                    {
-                        ?extension rdf:type mydata:Row ;
-                                   mydata:PK_MEDICATION_ID ?fkmi ;
-                                   mydata:expanded.query ?expandedName .
-                    }
-                    graph mydata:med_standard_FULL_NAME_bioportal_search 
-                    {
-                        ?searchRes rdf:type mydata:Row ;
-                                   mydata:order ?expandedName ;
-                        		   mydata:rank "1" .
-                    } 
-                    graph mydata:RxnIfAvailable 
-                    {
-                        ?searchRes mydata:RxnIfAvailable ?rxnFromBioportalMapping ;
-                                   mydata:RxnAvailable "true"^^xsd:boolean .
-                    }
-                    BIND(uri(concat("http://purl.bioontology.org/ontology/RXNORM/", ?rxnval)) AS ?rxnFromDataset)
-                    BIND(If(BOUND(?rxnFromDataset), ?rxnFromDataset, ?rxnFromBioportalMapping) AS ?rxnMapping)
-                }
-              """
-              val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
+              val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, getOrderNameLookupQuery(fullNameString))
               val result: TupleQueryResult = tupleQuery.evaluate()
               var listToReturn: ArrayBuffer[MedLookupResult] = ArrayBuffer[MedLookupResult]()
               
@@ -214,5 +148,110 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
        props.load(input)
        input.close()
        props.getProperty(key)
+  }
+  
+  def getOntologyTermLookupQuery(rxNormString: String): String =
+  {
+    """
+  	PREFIX mydata: <http://example.com/resource/>
+    PREFIX graphBuilder: <http://graphBuilder.org/>
+    PREFIX turbo: <http://transformunify.org/ontologies/>
+    PREFIX obo: <http://purl.obolibrary.org/obo/>
+    PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    select 
+    distinct ?fullName ?rxNormTerm
+    where
+    {
+        Values ?rxNormTerm {"""+rxNormString+"""}
+        {
+            graph mydata:wes_pds__med_standard.csv 
+            {
+                ?standard a mydata:medStandard ;
+                          mydata:PK_MEDICATION_ID ?fkmi ;
+                          mydata:FULL_NAME ?fullName .
+                    ?standard  mydata:RXNORM ?rxNormNumber .
+            }
+            BIND(STRAFTER(str(?rxNormTerm), "http://purl.bioontology.org/ontology/RXNORM/") AS ?rxNormNumber2)
+    		FILTER(?rxNormNumber = ?rxNormNumber2)
+        }
+        UNION
+        {
+            graph mydata:wes_pds__med_standard.csv 
+            {
+                ?standard a mydata:medStandard ;
+                          mydata:PK_MEDICATION_ID ?fkmi ;
+                          mydata:FULL_NAME ?fullName .
+            }
+            graph mydata:med_standard_FULL_NAME_query_expansion 
+            {
+                ?extension rdf:type mydata:Row ;
+                           mydata:PK_MEDICATION_ID ?fkmi ;
+                           mydata:expanded.query ?expandedName .
+            }
+            graph mydata:med_standard_FULL_NAME_bioportal_search 
+            {
+                ?searchRes rdf:type mydata:Row ;
+                           mydata:order ?expandedName ;
+                           mydata:rank "1" .
+            } 
+            graph mydata:RxnIfAvailable 
+            {
+                ?searchRes mydata:RxnIfAvailable ?rxNormTerm ;
+                           mydata:RxnAvailable "true"^^xsd:boolean .
+            }   
+        }
+    }
+  """
+  }
+  
+  def getOrderNameLookupQuery(fullNameString: String): String =
+  {
+   """
+  	PREFIX mydata: <http://example.com/resource/>
+    PREFIX graphBuilder: <http://graphBuilder.org/>
+    PREFIX turbo: <http://transformunify.org/ontologies/>
+    PREFIX obo: <http://purl.obolibrary.org/obo/>
+    PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    select 
+    ?fullName ?expandedName ?rxnMapping
+    where
+    {
+        Values ?fullName {"""+fullNameString+"""}
+        graph mydata:wes_pds__med_standard.csv 
+        {
+            ?standard a mydata:medStandard ;
+                      mydata:PK_MEDICATION_ID ?fkmi ;
+                      mydata:FULL_NAME ?fullName .
+            optional {
+                ?standard  mydata:RXNORM ?rxnval .
+            }
+        }
+        graph mydata:med_standard_FULL_NAME_query_expansion 
+        {
+            ?extension rdf:type mydata:Row ;
+                       mydata:PK_MEDICATION_ID ?fkmi ;
+                       mydata:expanded.query ?expandedName .
+        }
+        graph mydata:med_standard_FULL_NAME_bioportal_search 
+        {
+            ?searchRes rdf:type mydata:Row ;
+                       mydata:order ?expandedName ;
+            		   mydata:rank "1" .
+        } 
+        graph mydata:RxnIfAvailable 
+        {
+            ?searchRes mydata:RxnIfAvailable ?rxnFromBioportalMapping ;
+                       mydata:RxnAvailable "true"^^xsd:boolean .
+        }
+        BIND(uri(concat("http://purl.bioontology.org/ontology/RXNORM/", ?rxnval)) AS ?rxnFromDataset)
+        BIND(If(BOUND(?rxnFromDataset), ?rxnFromDataset, ?rxnFromBioportalMapping) AS ?rxnMapping)
+    }
+  """
   }
 }
