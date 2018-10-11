@@ -3,7 +3,7 @@ lazy val commonSettings = Seq(
   organization := "edu.upenn",
   scalaVersion := "2.12.6",
   test in assembly := {},
-  name := "Dashboard",
+  name := "Dashboard"
 )
 
 val ScalatraVersion = "2.6.3"
@@ -63,8 +63,17 @@ libraryDependencies ++= Seq(
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
   "org.eclipse.rdf4j" % "rdf4j-runtime" % "2.4.0-M1",
   "org.json4s" % "json4s-jackson_2.12" % "3.5.2",
-  "org.scalatra" % "scalatra-json_2.12" % "2.6.3"
+  "org.scalatra" % "scalatra-json_2.12" % "2.6.3",
+  //"org.apache.tinkerpop" % "neo4j-gremlin" % "3.3.1",
+  //"org.neo4j" % "neo4j-tinkerpop-api-impl" % "0.7-3.2.3",
+  //"org.apache.tinkerpop" % "gremlin-core" % "3.3.1",
+  //"org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.3.1",
+  //"com.michaelpollmeier" % "gremlin-scala_2.12" % "3.3.1.0",
+  "org.neo4j" % "neo4j" % "3.4.8"
+  
+  
 )
 
 enablePlugins(SbtTwirl)
 enablePlugins(ScalatraPlugin)
+

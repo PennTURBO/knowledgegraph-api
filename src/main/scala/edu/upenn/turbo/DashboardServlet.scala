@@ -43,6 +43,16 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       contentType = formats("json")
   }
   
+  post("/medications/findOrderNamesFromInputString")
+  {
+      val neo4j: Neo4jOperations = new Neo4jOperations
+      /*val classesToLookup: String = request.body
+      var extractedResult: Option[String] = None : Option[String]
+      val parsedResult = parse(classesToLookup)
+      extractedResult = Some(parsedResult.extract[String])*/
+      neo4j.connectToNeo4j()
+  }
+  
   post("/medications/ontologyTermLookup")
   {
       val classesToLookup: String = request.body
