@@ -27,6 +27,11 @@ import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
 import java.util.Properties
 import java.io.FileInputStream
+import org.eclipse.rdf4j.repository.RepositoryConnection
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -45,12 +50,31 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   
   post("/medications/findOrderNamesFromInputString")
   {
-      val neo4j: Neo4jOperations = new Neo4jOperations
-      /*val classesToLookup: String = request.body
-      var extractedResult: Option[String] = None : Option[String]
-      val parsedResult = parse(classesToLookup)
-      extractedResult = Some(parsedResult.extract[String])*/
-      neo4j.connectToNeo4j()
+      var cxn: RepositoryConnection = null
+      var repository: Repository = null
+      var repoManager: RemoteRepositoryManager = null
+      var neo4jgraph: Neo4jGraph = null
+      try
+      {
+          repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+          repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+          repoManager.initialize()
+          repository = repoManager.getRepository(getFromProperties("repository"))
+          cxn = repository.getConnection()
+          
+          neo4jgraph = Neo4jGraph.open("simple_graph")
+          val g: GraphTraversalSource = neo4jgraph.traversal()
+    
+          val neo4j: Neo4jConnector = new Neo4jConnector
+          neo4j.getOrderNames("node1", cxn, g)
+      }
+      finally
+      {
+          cxn.close()
+          repository.shutDown()
+          repoManager.shutDown()
+          neo4jgraph.close()
+      }
   }
   
   post("/medications/ontologyTermLookup")
