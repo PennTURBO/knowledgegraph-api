@@ -20,17 +20,15 @@ import org.eclipse.rdf4j.OpenRDFException
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
 
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.io.PrintWriter
+
 class Neo4jConnector 
 {
-    def getOrderNames(drugName: String, cxn: RepositoryConnection, g: GraphTraversalSource)
+    def getOrderNames(freeTextInput: String, cxn: RepositoryConnection, g: GraphTraversalSource): Array[String] =
     {
-        /*val result = g.V().has("uri", "http://purl.obolibrary.org/obo/CHEBI_35480").
-        emit().repeat(in("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).times(2).dedup().
-        in("http://www.w3.org/2002/07/owl#someValuesFrom").in("http://www.w3.org/2000/01/rdf-schema#subClassOf").
-        emit().repeat(in("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).times(2).dedup().
-        union(out("http://example.com/resource/materialized_dbxr"),in("http://example.com/resource/inputTerm").as("x").
-            out("http://example.com/resource/matchOnt").has("uri", "http://data.bioontology.org/ontologies/RXNORM").
-            select("x").out("http://example.com/resource/matchTerm")).dedup().
+        val result = g.V().has("uri", freeTextInput).
         repeat(in(
             "http://purl.bioontology.org/ontology/RXNORM/has_ingredient",
             "http://purl.bioontology.org/ontology/RXNORM/isa",
@@ -41,14 +39,28 @@ class Neo4jConnector
             "http://purl.bioontology.org/ontology/RXNORM/has_part",
             "http://purl.bioontology.org/ontology/RXNORM/form_of",
             "http://purl.bioontology.org/ontology/RXNORM/has_form",
-            "http://purl.bioontology.org/ontology/RXNORM/contains"
-            ).simplePath()).emit().times(3).dedup().
+            "http://purl.bioontology.org/ontology/RXNORM/contains",
+            "http://graphBuilder.org/materialized_drug_relationship"
+            ).simplePath()).emit().times(4).dedup().
         in("http://example.com/resource/rxnifavailable").has("http://example.com/resource/FULL_NAME").
-        dedup().toList()
+        dedup().toList().toArray
           
-        println("gremlin result size: " + result)*/
+        //println("gremlin result size: " + result.size)
+        var buffToSet = new ArrayBuffer[String]
+        for (a <- result) buffToSet += a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].
+            value("http://example.com/resource/FULL_NAME").toString
+        println("collected results in array")
+        val finalList = buffToSet.toSet.toArray
+        println("final size: " + finalList.size)
+        finalList
+        //for (a <- finalList) println("result: " + a)
 
-        val node1 = g.addV("Resource").property("uri", "node1").next()
+        /*val csvFile: File = new File ("traversal_output.csv")
+        val writeCSV: PrintWriter = new PrintWriter(csvFile)
+        for (a <- finalList) writeCSV.println(a)
+        writeCSV.close()*/
+
+        /*val node1 = g.addV("Resource").property("uri", "node1").next()
         val node2 = g.addV("Resource").property("uri", "node2").next()
         val node3 = g.addV("Resource").property("uri", "node3").next()
         val node4 = g.addV("Resource").property("uri", "node4").next()
@@ -88,7 +100,7 @@ class Neo4jConnector
         toList().toArray()
 
         println("result size: " + result.size)
-        for (a <- result) println(a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].value("FULL_NAME"))
+        for (a <- result) println(a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].value("FULL_NAME"))*/
     }
     
     def querySparql(cxn: RepositoryConnection, query: String): Option[TupleQueryResult] =

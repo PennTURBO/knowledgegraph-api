@@ -5,6 +5,7 @@ import org.scalatra._
 import org.scalatra.json._
 import org.json4s._
 import org.json4s.JsonDSL._*/
+import org.json4s.MappingException
 
 // RDF4J imports
 import org.eclipse.rdf4j.rio._
@@ -35,10 +36,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 
 import scala.collection.mutable.ArrayBuffer
 
-case class MedLookupResult(medFullName: String, mappedTerm: String)
-case class MedFullName(fullName: List[String])
-case class OntologyTerm(ontologyTerm: List[String])
-case class OntologyLookupResult(ontologyTerm: String, meds: String)
+case class FullNameResults(resultsList: Array[String])
+case class FullNameInput(searchTerm: String)
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
@@ -50,95 +49,19 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   
   post("/medications/findOrderNamesFromInputString")
   {
+      println("Received a post request")
       var cxn: RepositoryConnection = null
       var repository: Repository = null
       var repoManager: RemoteRepositoryManager = null
       var neo4jgraph: Neo4jGraph = null
-      try
-      {
-          repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-          repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-          repoManager.initialize()
-          repository = repoManager.getRepository(getFromProperties("repository"))
-          cxn = repository.getConnection()
-          
-          neo4jgraph = Neo4jGraph.open("simple_graph")
-          val g: GraphTraversalSource = neo4jgraph.traversal()
-    
-          val neo4j: Neo4jConnector = new Neo4jConnector
-          neo4j.getOrderNames("node1", cxn, g)
-      }
-      finally
-      {
-          cxn.close()
-          repository.shutDown()
-          repoManager.shutDown()
-          neo4jgraph.close()
-      }
-  }
-  
-  post("/medications/ontologyTermLookup")
-  {
-      val classesToLookup: String = request.body
-      var extractedResult: Option[OntologyTerm] = None : Option[OntologyTerm]
-      try
-      {
-        val parsedResult = parse(classesToLookup)
-        extractedResult = Some(parsedResult.extract[OntologyTerm])
-          
-        var rxNormString: String = extractedResult.get.ontologyTerm.mkString("<","><",">")
-      
-        var cxn: RepositoryConnection = null
-        var repository: Repository = null
-        var repoManager: RemoteRepositoryManager = null
-        try
-        {
-            repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-            repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-            repoManager.initialize()
-            repository = repoManager.getRepository(getFromProperties("repository"))
-            cxn = repository.getConnection()
-  
-            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, getOntologyTermLookupQuery(rxNormString))
-            val result: TupleQueryResult = tupleQuery.evaluate()
-            var listToReturn: ArrayBuffer[OntologyLookupResult] = ArrayBuffer[OntologyLookupResult]()
-            
-            while (result.hasNext)
-            {
-                 val bindingSet: BindingSet = result.next()
-                 val rxNormString: String = bindingSet.getBinding("rxNormTerm").toString
-                 val fullNameString: String = bindingSet.getBinding("fullName").toString
-                 listToReturn += 
-                   OntologyLookupResult(rxNormString.substring(11), 
-                       fullNameString.substring(10, fullNameString.length-2))
-            }
-            listToReturn
-        }
-        finally
-        {
-            cxn.close()
-            repository.shutDown()
-            repoManager.shutDown()
-        }
-      }
-      catch
-      {
-          case e: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-      }
-  }
-  
-  post("/medications/orderNameLookup")
-  {
-        val medsToLookup: String = request.body
-        var extractedResult: Option[MedFullName] = None : Option[MedFullName]
-        try
-        {
-          val parsedResult = parse(medsToLookup)
-          extractedResult = Some(parsedResult.extract[MedFullName])
-          var fullNameString: String = extractedResult.get.fullName.mkString("\"","\"\"","\"")
-          var cxn: RepositoryConnection = null
-          var repository: Repository = null
-          var repoManager: RemoteRepositoryManager = null
+      var parsedResult: String = null
+
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[FullNameInput]
+          parsedResult = extractedResult.searchTerm
+
           try
           {
               repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
@@ -146,33 +69,86 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repoManager.initialize()
               repository = repoManager.getRepository(getFromProperties("repository"))
               cxn = repository.getConnection()
-  
-              val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, getOrderNameLookupQuery(fullNameString))
-              val result: TupleQueryResult = tupleQuery.evaluate()
-              var listToReturn: ArrayBuffer[MedLookupResult] = ArrayBuffer[MedLookupResult]()
-              
-              while (result.hasNext)
+              println("Successfully connected to triplestore")
+
+              try 
+              { 
+                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
+              } 
+              catch 
               {
-                   val bindingSet: BindingSet = result.next()
-                   val fullNameStr: String = bindingSet.getBinding("fullName").toString
-                   val medMappedStr: String = bindingSet.getBinding("rxnMapping").toString
-                   listToReturn += 
-                     MedLookupResult(fullNameStr.substring(10, fullNameStr.size-1), 
-                         medMappedStr.substring(11, medMappedStr.size-2))
+                  case e: Throwable => e.printStackTrace()
               }
-              listToReturn
+              val g: GraphTraversalSource = neo4jgraph.traversal()
+              println("Successfully connected to property graph")
+            
+              val bestResult = getBestMatchTermFromLucene(cxn, parsedResult)
+              if (bestResult == None)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else
+              {
+                  println("Your input of \"" + parsedResult + "\" was mapped to class " + bestResult.get)
+                  val neo4j: Neo4jConnector = new Neo4jConnector
+                  FullNameResults(neo4j.getOrderNames(bestResult.get, cxn, g))
+              }
+          }
+          catch
+          {
+              case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           }
           finally
           {
               cxn.close()
               repository.shutDown()
               repoManager.shutDown()
+              neo4jgraph.close()
+              println("Connections closed.")
           }
-        }
-        catch
-        {
-            case e: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-        }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+      }
+  }
+  
+  def getBestMatchTermFromLucene(cxn: RepositoryConnection, userInput: String): Option[String] =
+  {
+      val query = """
+          PREFIX : <http://www.ontotext.com/connectors/lucene#>
+          PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
+          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+          PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+          SELECT ?entity ?score ?label {
+              ?search a inst:role_via_rdfs_or_skos_label ;
+                      :query "role_via_rdfs_label:"""+userInput+""" OR role_via_skos_label:"""+userInput+"""" ;
+                                                         :entities ?entity .
+              ?entity :score ?score .
+              {
+                  {
+                      graph <http://data.bioontology.org/ontologies/RXNORM/submissions/15/download> 
+                      {
+                          ?entity skos:prefLabel ?label .
+                      }
+                  }
+                  union
+                  {
+                      graph <ftp://ftp.ebi.ac.uk/pub/databases/chebi/ontology/chebi_lite.owl.gz>
+                      {
+                          ?entity rdfs:label ?label .
+                      }
+                  }
+              }
+          }
+          order by desc(?score)
+          limit 1
+      """
+      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+      if (tupleQueryResult.hasNext()) Some(tupleQueryResult.next.getValue("entity").toString)
+      else None
   }
   
   def getFromProperties(key: String, file: String = "dashboard.properties"): String =
@@ -182,110 +158,5 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
        props.load(input)
        input.close()
        props.getProperty(key)
-  }
-  
-  def getOntologyTermLookupQuery(rxNormString: String): String =
-  {
-    """
-  	PREFIX mydata: <http://example.com/resource/>
-    PREFIX graphBuilder: <http://graphBuilder.org/>
-    PREFIX turbo: <http://transformunify.org/ontologies/>
-    PREFIX obo: <http://purl.obolibrary.org/obo/>
-    PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    select 
-    distinct ?fullName ?rxNormTerm
-    where
-    {
-        Values ?rxNormTerm {"""+rxNormString+"""}
-        {
-            graph mydata:wes_pds__med_standard.csv 
-            {
-                ?standard a mydata:medStandard ;
-                          mydata:PK_MEDICATION_ID ?fkmi ;
-                          mydata:FULL_NAME ?fullName .
-                    ?standard  mydata:RXNORM ?rxNormNumber .
-            }
-            BIND(STRAFTER(str(?rxNormTerm), "http://purl.bioontology.org/ontology/RXNORM/") AS ?rxNormNumber2)
-    		FILTER(?rxNormNumber = ?rxNormNumber2)
-        }
-        UNION
-        {
-            graph mydata:wes_pds__med_standard.csv 
-            {
-                ?standard a mydata:medStandard ;
-                          mydata:PK_MEDICATION_ID ?fkmi ;
-                          mydata:FULL_NAME ?fullName .
-            }
-            graph mydata:med_standard_FULL_NAME_query_expansion 
-            {
-                ?extension rdf:type mydata:Row ;
-                           mydata:PK_MEDICATION_ID ?fkmi ;
-                           mydata:expanded.query ?expandedName .
-            }
-            graph mydata:med_standard_FULL_NAME_bioportal_search 
-            {
-                ?searchRes rdf:type mydata:Row ;
-                           mydata:order ?expandedName ;
-                           mydata:rank "1" .
-            } 
-            graph mydata:RxnIfAvailable 
-            {
-                ?searchRes mydata:RxnIfAvailable ?rxNormTerm ;
-                           mydata:RxnAvailable "true"^^xsd:boolean .
-            }   
-        }
-    }
-  """
-  }
-  
-  def getOrderNameLookupQuery(fullNameString: String): String =
-  {
-   """
-  	PREFIX mydata: <http://example.com/resource/>
-    PREFIX graphBuilder: <http://graphBuilder.org/>
-    PREFIX turbo: <http://transformunify.org/ontologies/>
-    PREFIX obo: <http://purl.obolibrary.org/obo/>
-    PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    PREFIX ns1: <http://www.geneontology.org/formats/oboInOwl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    select 
-    ?fullName ?expandedName ?rxnMapping
-    where
-    {
-        Values ?fullName {"""+fullNameString+"""}
-        graph mydata:wes_pds__med_standard.csv 
-        {
-            ?standard a mydata:medStandard ;
-                      mydata:PK_MEDICATION_ID ?fkmi ;
-                      mydata:FULL_NAME ?fullName .
-            optional {
-                ?standard  mydata:RXNORM ?rxnval .
-            }
-        }
-        graph mydata:med_standard_FULL_NAME_query_expansion 
-        {
-            ?extension rdf:type mydata:Row ;
-                       mydata:PK_MEDICATION_ID ?fkmi ;
-                       mydata:expanded.query ?expandedName .
-        }
-        graph mydata:med_standard_FULL_NAME_bioportal_search 
-        {
-            ?searchRes rdf:type mydata:Row ;
-                       mydata:order ?expandedName ;
-            		   mydata:rank "1" .
-        } 
-        graph mydata:RxnIfAvailable 
-        {
-            ?searchRes mydata:RxnIfAvailable ?rxnFromBioportalMapping ;
-                       mydata:RxnAvailable "true"^^xsd:boolean .
-        }
-        BIND(uri(concat("http://purl.bioontology.org/ontology/RXNORM/", ?rxnval)) AS ?rxnFromDataset)
-        BIND(If(BOUND(?rxnFromDataset), ?rxnFromDataset, ?rxnFromBioportalMapping) AS ?rxnMapping)
-    }
-  """
   }
 }

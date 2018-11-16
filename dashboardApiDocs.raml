@@ -1,91 +1,27 @@
 #%RAML 1.0
 ---
 title: TURBO Dashboard API
-baseURI: turbo-dev-app01.pmacs.upenn.edu:{port}/
+baseURI: turbo-dev-app01.pmacs.upenn.edu:8089/
 version: 0.0.1
 
 /medications:
-  /orderNameLookup:
+  /findOrderNamesFromInputString:
     post: 
 	  queryParameters:
-	    medicationOrderName: 
-	      displayName: fullName
-	      type: JSON String Array
-	      description: list of unmapped medication order names
-	      example: {"fullName":["INSULIN ASPART 100 UNIT/ML SC SOLN", "ONDANSETRON HCL 4 MG/2ML INJECTION SOLN", "sodium chloride 0.9% -"]}
+	    freeTextSearchTerm: 
+	      displayName: searchTerm
+	      type: JSON String
+	      description: free text with a correctly spelled drug role, drug generic name, or drug brand name
+	      examples: {"fullName":"analgesic"} {"fullName":"aspirin"}
 	      required: true
 	      responses:
 	        200:
 	          body:
 	            application/json:
 	              example:
-	                """
-	                [
-	                  {
-				          "medFullName": "INSULIN ASPART 100 UNIT/ML SC SOLN",
-				          "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/3432"
-				      },
-				      {
-				          "medFullName": "ONDANSETRON HCL 4 MG/2ML INJECTION SOLN",
-				          "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/13141"
-				      },
-				      {
-				          "medFullName": "sodium chloride 0.9% -",
-				          "mappedTerm": "http://purl.bioontology.org/ontology/RXNORM/3129"
-				      }
-				    ]
-			        """
-			400: 
-			  body:
-			    application/json:
-	              example:
-			        """
-		            {
-    				  "message": "Unable to parse JSON"
-				    }
-				    """
-  /ontologyTermLookup:
-    post:
-      queryParameters:
-        rxNormOntologyTerm:
-          displayName: ontologyTerm
-	      type: JSON String Array
-	      description: list of rxNorm ontology terms to be mapped to existing med order names
-	      example: {"ontologyTerm":["http://purl.bioontology.org/ontology/RXNORM/4109", "http://purl.bioontology.org/ontology/RXNORM/274783", "http://purl.bioontology.org/ontology/RXNORM/993781"]}
-	      required: true
-	      responses:
-	        200:
-	          body:
-	            application/json:
-	              example:
-	                """
-	                [
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/274783",
-				        "meds": "insulin glargin"
-				      },
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/4109",
-				        "meds": ".ethacrynic acid injection "
-				      },
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/274783",
-				        "meds": ".insulin glargine injection "
-				      },
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/993781",
-				        "meds": "ACETAMINOPHEN-CODEINE #3 300-30 MG PO TAB"
-				      },
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/993781",
-				        "meds": "ACETAMINOPHEN-CODEINE 300-30 MG PO TAB"
-				      },
-				      {
-				        "ontologyTerm": "http://purl.bioontology.org/ontology/RXNORM/993781",
-				        "meds": "acetaminophen-codeine 300 mg-30 mg oral table"
-				      }
-				    ]
-			        """
+	                # fill in here
+			204:
+			  		# fill in here
 			400: 
 			  body:
 			    application/json:
