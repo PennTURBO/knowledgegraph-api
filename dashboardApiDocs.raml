@@ -12,16 +12,23 @@ version: 0.0.1
 	      displayName: searchTerm
 	      type: JSON String
 	      description: free text with a correctly spelled drug role, drug generic name, or drug brand name
-	      examples: {"fullName":"analgesic"} {"fullName":"aspirin"}
+	      examples: {"fullName":"analgesic"}
 	      required: true
 	      responses:
 	        200:
 	          body:
 	            application/json:
 	              example:
-	                # fill in here
+	                {
+    				  "resultsList": [
+    				    "IBUPROFEN 600 MG",
+    				    "MOTRIN 600 MG",
+    				    "1 PERCOCET TABLET"
+    				  ]
+    				},
 			204:
-			  		# fill in here
+			  header:
+			    message:Your input of "analgesic" returned no matches.
 			400: 
 			  body:
 			    application/json:
