@@ -26,9 +26,9 @@ import java.io.PrintWriter
 
 class Neo4jConnector 
 {
-    def getOrderNames(freeTextInput: String, cxn: RepositoryConnection, g: GraphTraversalSource): Array[String] =
+    def getOrderNames(mappedTerm: String, g: GraphTraversalSource): Array[String] =
     {
-        val result = g.V().has("uri", freeTextInput).
+        val result = g.V().has("uri", mappedTerm).
         repeat(in(
             "http://purl.bioontology.org/ontology/RXNORM/has_ingredient",
             "http://purl.bioontology.org/ontology/RXNORM/isa",
@@ -102,22 +102,4 @@ class Neo4jConnector
         println("result size: " + result.size)
         for (a <- result) println(a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].value("FULL_NAME"))*/
     }
-    
-    def querySparql(cxn: RepositoryConnection, query: String): Option[TupleQueryResult] =
-    {
-        var result: Option[TupleQueryResult] = None : Option[TupleQueryResult]
-        try 
-        {
-            //send input String to Blazegraph SPARQL engine via the RepositoryConnection object
-            val tupleQuery: TupleQuery = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query)
-            //convert tupleQuery into TupleQueryResult using built-in evaluate() function
-            result = Some(tupleQuery.evaluate())
-            result
-        }
-        catch
-        {
-            case e: OpenRDFException => println(e.toString)
-            None
-        }
-      }
 }

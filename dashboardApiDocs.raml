@@ -12,7 +12,7 @@ version: 0.0.1
 	      displayName: searchTerm
 	      type: JSON String
 	      description: free text with a correctly spelled drug role, drug generic name, or drug brand name
-	      examples: {"fullName":"analgesic"}
+	      example: {"searchTerm":"analgesic"}
 	      required: true
 	      responses:
 	        200:
@@ -20,15 +20,49 @@ version: 0.0.1
 	            application/json:
 	              example:
 	                {
+	                  "mappedInputTerm": "http://purl.obolibrary.org/obo/CHEBI_35480",
     				  "resultsList": [
     				    "IBUPROFEN 600 MG",
     				    "MOTRIN 600 MG",
     				    "1 PERCOCET TABLET"
+    				    ...
     				  ]
     				},
 			204:
 			  header:
 			    message:Your input of "analgesic" returned no matches.
+			400: 
+			  body:
+			    application/json:
+	              example:
+			        """
+		            {
+    				  "message": "Unable to parse JSON"
+				    }
+				    """
+	/findOrderNamesFromInputURI:
+    post: 
+	  queryParameters:
+	    URISearchTerm: 
+	      displayName: searchTerm
+	      type: JSON String
+	      description: CHEBI or RxNorm URI representing a drug role, drug generic name, or drug brand name
+	      example: {"searchTerm":"http://purl.obolibrary.org/obo/CHEBI_35480"}
+	      required: true
+	      responses:
+	        200:
+	          body:
+	            application/json:
+	              example:
+	                {
+	                  "mappedInputTerm": "http://purl.obolibrary.org/obo/CHEBI_35480",
+    				  "resultsList": [
+    				    "IBUPROFEN 600 MG",
+    				    "MOTRIN 600 MG",
+    				    "1 PERCOCET TABLET"
+    				    ...
+    				  ]
+    				},
 			400: 
 			  body:
 			    application/json:

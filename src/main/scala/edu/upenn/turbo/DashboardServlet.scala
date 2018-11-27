@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 
 import scala.collection.mutable.ArrayBuffer
 
-case class FullNameResults(resultsList: Array[String])
+case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class FullNameInput(searchTerm: String)
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
@@ -92,7 +92,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               {
                   println("Your input of \"" + parsedResult + "\" was mapped to class " + bestResult.get)
                   val neo4j: Neo4jConnector = new Neo4jConnector
-                  FullNameResults(neo4j.getOrderNames(bestResult.get, cxn, g))
+                  FullNameResults(bestResult.get, neo4j.getOrderNames(bestResult.get, g))
               }
           }
           catch
@@ -106,6 +106,48 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repoManager.shutDown()
               neo4jgraph.close()
               println("Connections closed.")
+              println()
+          }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+      }
+  }
+
+  post("/medications/findOrderNamesFromInputURI")
+  {
+      println("Received a post request")
+      var neo4jgraph: Neo4jGraph = null
+      var parsedResult: String = null
+
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[FullNameInput]
+          parsedResult = extractedResult.searchTerm
+          try 
+          { 
+              try 
+              { 
+                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
+              } 
+              catch 
+              {
+                  case e: Throwable => e.printStackTrace()
+              }
+              val g: GraphTraversalSource = neo4jgraph.traversal()
+              println("Successfully connected to property graph")
+            
+              val neo4j: Neo4jConnector = new Neo4jConnector
+              FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
+          }
+          finally
+          {
+              neo4jgraph.close()
+              println("Connections closed.")
+              println()
           }
       } 
       catch 

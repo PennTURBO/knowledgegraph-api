@@ -10,18 +10,15 @@ $ sbt
 > jetty:start
 ```
 
-Once server is started, send medication mapping input strings to "http://localhost:8080/medications" as JSON.
+For free text lookup, send POST JSON to "http://localhost:8080/medications/findOrderNamesFromInputString"
 
-Example input:
+Example input for free text lookup:
 
-    val jsonString = """
-    [
-        {
-            "fullName": "\"INSULIN ASPART 100 UNIT/ML SC SOLN\"",
-            "fullName": "\"ONDANSETRON HCL 4 MG/2ML INJECTION SOLN\"",
-            "fullName": "\"sodium chloride 0.9% -\""
-        }
-    ]
-    """
+    {"searchTerm":"analgesic"}
 
+For URI lookup, send POST JSON to "http://localhost:8080/medications/findOrderNamesFromInputURI"
 
+    {"searchTerm":"http://purl.obolibrary.org/obo/CHEBI_35480"}
+
+Note that when running from SBT the default port is 8080, as a precompiled .jar the default port is 8089.
+See dashboardApiDocs.raml for more explicit documentation.
