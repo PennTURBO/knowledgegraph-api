@@ -40,8 +40,10 @@ class Neo4jConnector
             "http://purl.bioontology.org/ontology/RXNORM/form_of",
             "http://purl.bioontology.org/ontology/RXNORM/has_form",
             "http://purl.bioontology.org/ontology/RXNORM/contains",
-            "http://graphBuilder.org/materialized_drug_relationship"
-            ).simplePath()).emit().times(4).dedup().
+            "http://graphBuilder.org/materialized_drug_relationship",
+            "http://graphBuilder.org/materialized_chebi_toRxnorm_relationship",
+            "http://graphBuilder.org/materialized_chebi_subclass_relationship"
+            ).simplePath()).emit().times(5).dedup().
         in("http://example.com/resource/rxnifavailable").has("http://example.com/resource/FULL_NAME").
         dedup().toList().toArray
           

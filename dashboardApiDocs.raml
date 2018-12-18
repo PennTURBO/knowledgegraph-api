@@ -35,11 +35,10 @@ version: 0.0.1
 			  body:
 			    application/json:
 	              example:
-			        """
 		            {
     				  "message": "Unable to parse JSON"
 				    }
-				    """
+	
 	/findOrderNamesFromInputURI:
     post: 
 	  queryParameters:
@@ -67,8 +66,25 @@ version: 0.0.1
 			  body:
 			    application/json:
 	              example:
-			        """
 		            {
     				  "message": "Unable to parse JSON"
 				    }
-				    """
+				
+    /lastGraphUpdate:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                {
+				    "dateOfUpdate": "2018-11-27",
+				    "timeOfUpdate": "19:13:59"
+				}
+		500:
+		  body:
+		    application/json:
+		      example:
+		        {
+				    "message": "Graph file not found"
+				}
