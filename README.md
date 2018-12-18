@@ -21,4 +21,5 @@ For URI lookup, send POST JSON to "http://localhost:8080/medications/findOrderNa
     {"searchTerm":"http://purl.obolibrary.org/obo/CHEBI_35480"}
 
 Note that when running from SBT the default port is 8080, as a precompiled .jar the default port is 8089.
+
 See dashboardApiDocs.raml for more explicit documentation.
