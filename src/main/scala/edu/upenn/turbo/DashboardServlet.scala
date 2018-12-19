@@ -45,6 +45,8 @@ case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class FullNameInput(searchTerm: String)
 case class LuceneMedResults(searchTerm: String, luceneResults: Array[String])
 case class LuceneDiagResults(searchTerm: String, luceneResults: Array[String])
+case class DrugClassInputs(searchList: Array[String])
+case class DrugResults(resultsList: Map[String, Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
@@ -345,6 +347,48 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: Throwable => InternalServerError(Map("message" -> "Unknown server error occurred"))
       }
       
+  }
+
+  post("/medications/findHopsAwayFromDrug")
+  {
+      println("Received a post request")
+      var neo4jgraph: Neo4jGraph = null
+      var parsedResult: Array[String] = null
+
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[DrugClassInputs]
+          parsedResult = extractedResult.searchList
+          println("Input class: " + parsedResult)
+          try 
+          { 
+              try 
+              { 
+                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
+              } 
+              catch 
+              {
+                  case e: Throwable => e.printStackTrace()
+              }
+              val g: GraphTraversalSource = neo4jgraph.traversal()
+              println("Successfully connected to property graph")
+            
+              val neo4j: Neo4jConnector = new Neo4jConnector
+              DrugResults(neo4j.getHopsAwayFromDrug(parsedResult, g))
+          }
+          finally
+          {
+              neo4jgraph.close()
+              println("Connections closed.")
+              println()
+          }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+      }
   }
   
   def getFromProperties(key: String, file: String = "dashboard.properties"): String =

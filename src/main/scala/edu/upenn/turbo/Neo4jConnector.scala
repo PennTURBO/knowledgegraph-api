@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.OpenRDFException
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -55,53 +56,28 @@ class Neo4jConnector
         val finalList = buffToSet.toSet.toArray
         println("final size: " + finalList.size)
         finalList
-        //for (a <- finalList) println("result: " + a)
+    }
 
-        /*val csvFile: File = new File ("traversal_output.csv")
-        val writeCSV: PrintWriter = new PrintWriter(csvFile)
-        for (a <- finalList) writeCSV.println(a)
-        writeCSV.close()*/
+    def getHopsAwayFromDrug(startTerm: Array[String], g: GraphTraversalSource): Map[String, Array[String]] =
+    {
+        var res = new HashMap[String, Array[String]]
+        println("received input of size: " + startTerm.size)
+        for (a <- startTerm)
+        {
+            println("scanning uri: " + a)
+            val result = g.V().has("uri", a).
+            repeat(out("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).emit()
+            .times(7).has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888")/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/
+            .path().by("uri").toList.toArray
 
-        /*val node1 = g.addV("Resource").property("uri", "node1").next()
-        val node2 = g.addV("Resource").property("uri", "node2").next()
-        val node3 = g.addV("Resource").property("uri", "node3").next()
-        val node4 = g.addV("Resource").property("uri", "node4").next()
-        val node5 = g.addV("Resource").property("uri", "node5").next()
+            var buffToSet = new ArrayBuffer[String]
+            for (b <- result) buffToSet += b.toString
+            println("collected results in array")
+            val finalList = buffToSet.toArray
+            println("final size: " + finalList.size)
 
-        val node6 = g.addV("Resource").property("FULL_NAME", "med1").next()
-        val node7 = g.addV("Resource").property("FULL_NAME", "med2").next()
-        val node8 = g.addV("Resource").property("FULL_NAME", "med3").next()
-        val node9 = g.addV("Resource").property("FULL_NAME", "med4").next()
-        val node10 = g.addV("Resource").property("FULL_NAME", "med5").next()
-
-        node1.addEdge("http://graphBuilder.org/materialized_drug_role", node2)
-        node2.addEdge("http://purl.bioontology.org/ontology/RXNORM/has_ingredient", node3)
-        node3.addEdge("http://purl.bioontology.org/ontology/RXNORM/isa", node4)
-        node4.addEdge("http://purl.bioontology.org/ontology/RXNORM/tradename_of", node5)
-
-        node6.addEdge("rxn_if_available", node1)
-        node7.addEdge("rxn_if_available", node2)
-        node8.addEdge("rxn_if_available", node3)
-        node9.addEdge("rxn_if_available", node4)
-        node10.addEdge("rxn_if_available", node5)
-
-        val result = g.V().has("uri", "node1").
-        repeat(out("http://purl.bioontology.org/ontology/RXNORM/has_ingredient",
-            "http://purl.bioontology.org/ontology/RXNORM/isa",
-            "http://purl.bioontology.org/ontology/RXNORM/tradename_of",
-            "http://purl.bioontology.org/ontology/RXNORM/consists_of",
-            "http://purl.bioontology.org/ontology/RXNORM/has_precise_ingredient",
-            "http://purl.bioontology.org/ontology/RXNORM/has_ingredients",
-            "http://purl.bioontology.org/ontology/RXNORM/has_part",
-            "http://purl.bioontology.org/ontology/RXNORM/form_of",
-            "http://purl.bioontology.org/ontology/RXNORM/has_form",
-            "http://purl.bioontology.org/ontology/RXNORM/contains",
-            "http://graphBuilder.org/materialized_drug_role"
-            ).simplePath()).emit().times(4).dedup().
-        in("rxn_if_available").has("FULL_NAME").
-        toList().toArray()
-
-        println("result size: " + result.size)
-        for (a <- result) println(a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].value("FULL_NAME"))*/
+            res += a -> finalList
+        }
+        res.toMap
     }
 }
