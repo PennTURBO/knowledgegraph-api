@@ -37,6 +37,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+import com.fasterxml.jackson.databind.JsonMappingException
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -68,8 +69,10 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       try 
       { 
           val userInput = request.body
+          println("received: " + userInput)
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
+          println("extracted search term")
 
           try
           {
@@ -100,6 +103,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
   }
 
@@ -142,6 +146,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
   }
 
@@ -196,6 +201,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
   }
 
@@ -250,6 +256,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
   }
   
@@ -388,6 +395,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
   }
   
