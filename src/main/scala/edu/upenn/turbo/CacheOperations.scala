@@ -52,7 +52,10 @@ class CacheOperations
 
     def writeResults(userQuery: String, results: Array[String], requestType: String)
     {
-        new Array[String](0)
+        val dt = new GenericDataTable(Map("name" -> userQuery).asJava)
+        val map1 = new HashMap[String, Object]()
+        for (a <- results) dt.dataAdd(Map(userQuery -> a).asJava)
+        dt.writeFiles(new File("cache//" + resultType + "_" + userQuery), Map("appendDateSuffix" -> true).asJava)
     }
 
     def getAllFilesWithMatchingPrefix(filePrefix: String, directory: String): Array[Object] =
@@ -77,11 +80,3 @@ class CacheOperations
         true
     }
 }
-
-//carnival practice code
-     /* val dt = new GenericDataTable(Map("name" -> "mydatatable").asJava)
-      val map1 = new HashMap[String, Object]()
-      map1 += "id" -> "123"
-      dt.dataAdd(map1.asJava)
-      println(dt)
-      dt.writeDataFile(new File("C://Users//hfree//Dashboard//cache"), Map("appendDateSuffix" -> true).asJava)*/
