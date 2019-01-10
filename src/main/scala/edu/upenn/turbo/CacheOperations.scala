@@ -52,10 +52,11 @@ class CacheOperations
 
     def writeResults(userQuery: String, results: Array[String], requestType: String)
     {
-        val dt = new GenericDataTable(Map("name" -> userQuery).asJava)
+        val tableName = requestType + "_" + userQuery
+        val dt = new GenericDataTable(Map("name" -> tableName).asJava)
         val map1 = new HashMap[String, Object]()
-        for (a <- results) dt.dataAdd(Map(userQuery -> a).asJava)
-        dt.writeFiles(new File("cache//" + resultType + "_" + userQuery), Map("appendDateSuffix" -> true).asJava)
+        for (a <- results) dt.dataAdd(Map(userQuery -> a.asInstanceOf[Object]).asJava)
+        dt.writeFiles(new File("cache//"), Map("appendDateSuffix" -> true).asJava)
     }
 
     def getAllFilesWithMatchingPrefix(filePrefix: String, directory: String): Array[Object] =

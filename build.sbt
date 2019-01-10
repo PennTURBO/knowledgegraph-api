@@ -21,6 +21,8 @@ lazy val utils = (project in file("utils")).
     assemblyJarName in assembly := "dashboard.jar",
   )
 
+resolvers += Resolver.mavenLocal
+
 assemblyMergeStrategy in assembly := {
 	case PathList("README.txt") => MergeStrategy.discard
     case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -81,11 +83,13 @@ libraryDependencies ++= Seq(
   //RDF4J
   "org.eclipse.rdf4j" % "rdf4j-model" % "2.4.0-M1",
   "org.eclipse.rdf4j" % "rdf4j-repository-api" % "2.4.0-M1",
-  "org.eclipse.rdf4j" % "rdf4j-repository-manager" % "2.4.0-M1"
+  "org.eclipse.rdf4j" % "rdf4j-repository-manager" % "2.4.0-M1",
   
   //Tinkerpop
   //"org.apache.tinkerpop" % "gremlin-core" % "3.3.1",
   //"org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.3.1"
+
+  "edu.upenn.pmbb" % "carnival-util" % "0.2.0"
 )
 
 enablePlugins(SbtTwirl)
