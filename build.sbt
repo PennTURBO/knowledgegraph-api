@@ -4,7 +4,7 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   scalaVersion in ThisBuild := "2.11.8",
   test in assembly := {},
-  name := "Dashboard"
+  name := "Turbo-API"
 )
 
 val ScalatraVersion = "2.6.3"
@@ -18,7 +18,7 @@ lazy val app = (project in file("app")).
 lazy val utils = (project in file("utils")).
   settings(commonSettings: _*).
   settings(
-    assemblyJarName in assembly := "dashboard.jar",
+    assemblyJarName in assembly := "turbo-api.jar",
   )
 
 resolvers += Resolver.mavenLocal

@@ -432,7 +432,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
   
-  def getFromProperties(key: String, file: String = "dashboard.properties"): String =
+  def getFromProperties(key: String, file: String = "turboAPI.properties"): String =
   {
        val input: FileInputStream = new FileInputStream(file)
        val props: Properties = new Properties()
