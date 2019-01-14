@@ -51,6 +51,9 @@ case class DrugResults(resultsList: Map[String, Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
+  val graphDB: GraphDBConnector = new GraphDBConnector
+  val neo4j: Neo4jConnector = new Neo4jConnector
+  val cache: CacheOperations = new CacheOperations
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -74,29 +77,44 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           parsedResult = extractedResult.searchTerm
           println("extracted search term")
 
-          try
+          val requestType = "diseaseToICD"
+          val cacheFileName = requestType + "_" + parsedResult.split("/")(4)
+
+          val cacheFileIfExists = cache.checkIfCurrentCacheExists(cacheFileName)
+
+          if (cacheFileIfExists != None)
           {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-              cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
-            
-              val graphDB: GraphDBConnector = new GraphDBConnector
-              FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, cxn))
+              println("Found up-to-date cache data for this search")
+              FullNameResults(parsedResult, cache.getResults(cacheFileIfExists.get))
           }
-          catch
+          else
           {
-              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
-          }
-          finally
-          {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              println("Connections closed.")
-              println()
+              try
+              {
+                  println("Did not find up-to-date cache file for this search")
+                  repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+                  repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+                  repoManager.initialize()
+                  repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
+                  cxn = repository.getConnection()
+                  println("Successfully connected to triplestore")
+
+                  val searchRes = graphDB.getDiagnosisCodes(parsedResult, cxn)
+                  cache.writeResults(cacheFileName, searchRes, requestType)
+                  FullNameResults(parsedResult, searchRes)
+              }
+              catch
+              {
+                  case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
+              finally
+              {
+                  cxn.close()
+                  repository.shutDown()
+                  repoManager.shutDown()
+                  println("Connections closed.")
+                  println()
+              }
           }
       } 
       catch 
@@ -119,27 +137,43 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
           println("Input class: " + parsedResult)
-          try 
-          { 
+
+          val requestType = "medToOrderName"
+          val cacheFileName = requestType + "_" + parsedResult.split("/")(4)
+
+          val cacheFileIfExists = cache.checkIfCurrentCacheExists(cacheFileName)
+
+          if (cacheFileIfExists != None)
+          {
+              println("Found up-to-date cache data for this search")
+              FullNameResults(parsedResult, cache.getResults(cacheFileIfExists.get))
+          }
+          else
+          {
+              println("Did not find up-to-date cache file for this search")
               try 
               { 
-                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
-              } 
-              catch 
-              {
-                  case e: Throwable => e.printStackTrace()
+                  try 
+                  { 
+                      neo4jgraph = Neo4jGraph.open("neo4j.graph")
+                  } 
+                  catch 
+                  {
+                      case e: Throwable => e.printStackTrace()
+                  }
+                  val g: GraphTraversalSource = neo4jgraph.traversal()
+                  println("Successfully connected to property graph")
+
+                  val searchRes = neo4j.getOrderNames(parsedResult, g)
+                  cache.writeResults(cacheFileName, searchRes, requestType)
+                  FullNameResults(parsedResult, searchRes)
               }
-              val g: GraphTraversalSource = neo4jgraph.traversal()
-              println("Successfully connected to property graph")
-            
-              val neo4j: Neo4jConnector = new Neo4jConnector
-              FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
-          }
-          finally
-          {
-              neo4jgraph.close()
-              println("Connections closed.")
-              println()
+              finally
+              {
+                  neo4jgraph.close()
+                  println("Connections closed.")
+                  println()
+              }
           }
       } 
       catch 
@@ -381,7 +415,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               val g: GraphTraversalSource = neo4jgraph.traversal()
               println("Successfully connected to property graph")
             
-              val neo4j: Neo4jConnector = new Neo4jConnector
               DrugResults(neo4j.getHopsAwayFromDrug(parsedResult, g))
           }
           finally

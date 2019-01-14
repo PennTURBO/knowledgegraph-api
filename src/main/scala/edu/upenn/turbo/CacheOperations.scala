@@ -38,11 +38,11 @@ class CacheOperations
         }
     }
 
-    def getResults(cacheFile: String): Array[String] =
+    def getResults(cacheFile: String, directory: String = "cache"): Array[String] =
     {
        var resArr = new ArrayBuffer[String]
        println("cache file: " + cacheFile)
-       val splitFile = cacheFile.split("//")
+       val splitFile = cacheFile.replaceAll("\\\\","//").split("//")
        var localPath = splitFile(1)
        if (localPath.endsWith(".csv")) localPath = localPath.substring(0, localPath.length - 4)
        val cacheData = GenericDataTable.createFromFiles(new File(splitFile(0)), localPath).dataIterator
@@ -50,13 +50,13 @@ class CacheOperations
        resArr.toArray
     }
 
-    def writeResults(userQuery: String, results: Array[String], requestType: String)
+    def writeResults(tableName: String, results: Array[String], requestType: String)
     {
-        val tableName = requestType + "_" + userQuery
+        if(!prefixLookup.contains(requestType)) throw new RuntimeException ("Provided file prefix " + requestType + " not recognized as an operation")
         val dt = new GenericDataTable(Map("name" -> tableName).asJava)
         val map1 = new HashMap[String, Object]()
-        for (a <- results) dt.dataAdd(Map(userQuery -> a.asInstanceOf[Object]).asJava)
-        dt.writeFiles(new File("cache//"), Map("appendDateSuffix" -> true).asJava)
+        for (a <- results) dt.dataAdd(Map(tableName -> a.asInstanceOf[Object]).asJava)
+        dt.writeFiles(new File("cache//")/*, Map("appendDateSuffix" -> true).asJava*/)
     }
 
     def getAllFilesWithMatchingPrefix(filePrefix: String, directory: String): Array[Object] =
