@@ -22,10 +22,11 @@ import scala.collection.mutable.ArrayBuffer
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.io.PrintWriter
+import org.slf4j.LoggerFactory
 
 class GraphDBConnector 
 {
+    val logger = LoggerFactory.getLogger(getClass)
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
     {
         val query = """
@@ -111,7 +112,7 @@ class GraphDBConnector
             var result: String = bindingset.getValue("icdsub").toString
             resultList += result
         }
-        println("result size: " + resultList.size)
+        logger.info("result size: " + resultList.size)
         resultList.toArray
     }
 }

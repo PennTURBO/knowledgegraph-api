@@ -23,12 +23,14 @@ import scala.collection.mutable.HashMap
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.io.PrintWriter
+import org.slf4j.LoggerFactory
 
 class Neo4jConnector 
 {
+    val logger = LoggerFactory.getLogger(getClass)
     def getOrderNames(mappedTerm: String, g: GraphTraversalSource): Array[String] =
     {
+        logger.info("Starting graph traversal")
         val result = g.V().has("uri", mappedTerm).
         repeat(in(
             "http://purl.bioontology.org/ontology/RXNORM/has_ingredient",
@@ -47,24 +49,24 @@ class Neo4jConnector
             ).simplePath()).emit().times(5).dedup().
         in("http://example.com/resource/rxnifavailable").has("http://example.com/resource/FULL_NAME").
         dedup().toList().toArray
-          
-        //println("gremlin result size: " + result.size)
+        logger.info("Finished graph traversal")
+        //logger.info("gremlin result size: " + result.size)
         var buffToSet = new ArrayBuffer[String]
         for (a <- result) buffToSet += a.asInstanceOf[org.apache.tinkerpop.gremlin.structure.Vertex].
             value("http://example.com/resource/FULL_NAME").toString
-        println("collected results in array")
+        logger.info("collected results in array")
         val finalList = buffToSet.toSet.toArray
-        println("final size: " + finalList.size)
+        logger.info("final size: " + finalList.size)
         finalList
     }
 
     def getHopsAwayFromDrug(startTerm: Array[String], g: GraphTraversalSource): Map[String, Array[String]] =
     {
         var res = new HashMap[String, Array[String]]
-        println("received input of size: " + startTerm.size)
+        logger.info("received input of size: " + startTerm.size)
         for (a <- startTerm)
         {
-            println("scanning uri: " + a)
+            logger.info("scanning uri: " + a)
             val result = g.V().has("uri", a).
             repeat(out("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).emit()
             .times(7).has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888")/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/
@@ -72,9 +74,9 @@ class Neo4jConnector
 
             var buffToSet = new ArrayBuffer[String]
             for (b <- result) buffToSet += b.toString
-            println("collected results in array")
+            logger.info("collected results in array")
             val finalList = buffToSet.toArray
-            println("final size: " + finalList.size)
+            logger.info("final size: " + finalList.size)
 
             res += a -> finalList
         }

@@ -39,6 +39,8 @@ import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import com.fasterxml.jackson.databind.JsonMappingException
 
+import org.slf4j.LoggerFactory
+
 import scala.collection.mutable.ArrayBuffer
 
 case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
@@ -51,6 +53,7 @@ case class DrugResults(resultsList: Map[String, Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
+  val logger = LoggerFactory.getLogger(getClass)
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -59,7 +62,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   post("/diagnoses/getICDCodesFromDiseaseURI")
   {
-      println("Received a post request")
+      logger.info("Received a post request")
       var cxn: RepositoryConnection = null
       var repository: Repository = null
       var repoManager: RemoteRepositoryManager = null
@@ -69,10 +72,10 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       try 
       { 
           val userInput = request.body
-          println("received: " + userInput)
+          logger.info("received: " + userInput)
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          println("extracted search term")
+          logger.info("extracted search term")
 
           try
           {
@@ -81,7 +84,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repoManager.initialize()
               repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
               cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
+              logger.info("Successfully connected to triplestore")
             
               val graphDB: GraphDBConnector = new GraphDBConnector
               FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, cxn))
@@ -95,7 +98,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn.close()
               repository.shutDown()
               repoManager.shutDown()
-              println("Connections closed.")
+              logger.info("Connections closed.")
               println()
           }
       } 
@@ -109,7 +112,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   post("/medications/findOrderNamesFromInputURI")
   {
-      println("Received a post request")
+      logger.info("Received a post request")
       var neo4jgraph: Neo4jGraph = null
       var parsedResult: String = null
 
@@ -118,7 +121,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          println("Input class: " + parsedResult)
+          logger.info("Input class: " + parsedResult)
           try 
           { 
               try 
@@ -130,15 +133,14 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                   case e: Throwable => e.printStackTrace()
               }
               val g: GraphTraversalSource = neo4jgraph.traversal()
-              println("Successfully connected to property graph")
-            
               val neo4j: Neo4jConnector = new Neo4jConnector
+              logger.info("Successfully connected to property graph")
               FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
           }
           finally
           {
               neo4jgraph.close()
-              println("Connections closed.")
+              logger.info("Connections closed.")
               println()
           }
       } 
@@ -169,7 +171,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repoManager.initialize()
               repository = repoManager.getRepository(getFromProperties("medications_repository"))
               cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
+              logger.info("Successfully connected to triplestore")
             
               val topResults = getBestMatchTermForMedicationLookup(cxn, parsedResult, 10)
               if (topResults == None)
@@ -193,7 +195,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn.close()
               repository.shutDown()
               repoManager.shutDown()
-              println("Connections closed.")
+              logger.info("Connections closed.")
               println()
           }
       }
@@ -207,6 +209,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   post("/diagnoses/luceneDiagLookup")
   {
+      logger.info("Received a post request")
       var cxn: RepositoryConnection = null
       var repository: Repository = null
       var repoManager: RemoteRepositoryManager = null
@@ -224,7 +227,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               repoManager.initialize()
               repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
               cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
+              logger.info("Successfully connected to triplestore")
             
               val topResults = getBestMatchTermForDiagnosisLookup(cxn, parsedResult, 10)
               if (topResults == None)
@@ -248,7 +251,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn.close()
               repository.shutDown()
               repoManager.shutDown()
-              println("Connections closed.")
+              logger.info("Connections closed.")
               println()
           }
       }
@@ -337,14 +340,14 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   {
       try 
       { 
-          println("Checking date of last graph update")
+          logger.info("Checking date of last graph update")
           val pathStr = "neo4j.graph"
           val timeRes = Files.readAttributes(Paths.get(pathStr), classOf[BasicFileAttributes]).creationTime.toString.split("T")
-          println(timeRes)
+          logger.info(timeRes(0) + " " + timeRes(1))
           val date = timeRes(0)
-          println("date of update: " + date)
+          logger.info("date of update: " + date)
           val time = timeRes(1).split("\\.")(0)
-          println("time of update: " + time)
+          logger.info("time of update: " + time)
           println()
           GraphUpdateTime(date, time)
       } 
@@ -358,7 +361,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   post("/medications/findHopsAwayFromDrug")
   {
-      println("Received a post request")
+      logger.info("Received a post request")
       var neo4jgraph: Neo4jGraph = null
       var parsedResult: Array[String] = null
 
@@ -367,7 +370,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[DrugClassInputs]
           parsedResult = extractedResult.searchList
-          println("Input class: " + parsedResult)
+          logger.info("Input class: " + parsedResult)
           try 
           { 
               try 
@@ -379,7 +382,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                   case e: Throwable => e.printStackTrace()
               }
               val g: GraphTraversalSource = neo4jgraph.traversal()
-              println("Successfully connected to property graph")
+              logger.info("Successfully connected to property graph")
             
               val neo4j: Neo4jConnector = new Neo4jConnector
               DrugResults(neo4j.getHopsAwayFromDrug(parsedResult, g))
@@ -387,7 +390,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           finally
           {
               neo4jgraph.close()
-              println("Connections closed.")
+              logger.info("Connections closed.")
               println()
           }
       } 
