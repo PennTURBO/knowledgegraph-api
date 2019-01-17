@@ -53,7 +53,7 @@ case class DrugResults(resultsList: Map[String, Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger = LoggerFactory.getLogger("turboAPIlogger")
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -154,6 +154,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   post("/medications/luceneMedLookup")
   {
+      logger.info("Received a post request")
       var cxn: RepositoryConnection = null
       var repository: Repository = null
       var repoManager: RemoteRepositoryManager = null

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 
 class GraphDBConnector 
 {
-    val logger = LoggerFactory.getLogger(getClass)
+    val logger = LoggerFactory.getLogger("turboAPIlogger")
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
     {
         val query = """
