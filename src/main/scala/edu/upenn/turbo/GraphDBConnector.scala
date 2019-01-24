@@ -27,6 +27,55 @@ import org.slf4j.LoggerFactory
 class GraphDBConnector 
 {
     val logger = LoggerFactory.getLogger(getClass)
+
+    def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
+    {
+        var startListAsString = ""
+        for (code <- startingCodes) startListAsString += " <" + code + "> "
+
+        val query = """
+            PREFIX obo: <http://purl.obolibrary.org/obo/>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
+            PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
+            PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+            PREFIX turbo: <http://transformunify.org/ontologies/>
+
+            select
+            distinct ?icdsub ?mondosub ?mlab2
+            where {
+                 values ?icdsub {
+                     """ + startListAsString + """
+                 }
+                graph obo:mondo.owl {
+                    #      ?mondostart rdfs:label ?mlab1 .
+                    #      ?mondosub rdfs:subClassOf* ?mondostart ;
+                    #                               rdfs:label ?mlab2 .
+                    ?mondosub rdfs:label ?mlab2 .
+                }
+                graph <http://graphBuilder.org/mondoToIcdMappings>
+                {
+                    ?mondosub <http://graphBuilder.org/mapsTo> ?icdsub .
+                }
+            }"""
+
+        val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+        val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
+        while (tupleQueryResult.hasNext()) 
+        {
+            val bindingset: BindingSet = tupleQueryResult.next()
+            var icdSub: String = bindingset.getValue("icdsub").toString
+            var mondoSub: String = bindingset.getValue("mondosub").toString
+            var mondoLabel: String = bindingset.getValue("mlab2").toString
+            logger.info(icdSub + " " + mondoSub + " " + mondoLabel)
+            resultList += Array(icdSub, mondoSub, mondoLabel)
+        }
+        logger.info("result size: " + resultList.size)
+        resultList.toArray
+    }
+
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
     {
         val query = """
@@ -39,7 +88,7 @@ class GraphDBConnector
             PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
             PREFIX turbo: <http://transformunify.org/ontologies/>
             select
-            distinct ?icdsub ?icdlab2
+            distinct ?icdsub
             where {
                 values ?mondostart {
                     <"""+start+""">
@@ -49,59 +98,10 @@ class GraphDBConnector
                     ?mondosub rdfs:subClassOf* ?mondostart ;
                                              rdfs:label ?mlab2 .
                 }
+                graph <http://graphBuilder.org/mondoToIcdMappings>
                 {
-                    {
-                        graph <http://example.com/resource/mondoOwlEquivalentNativeSnomed> {
-                            ?mondosub owl:equivalentClass ?snomedstart .
-                        }
-                        graph <https://bioportal.bioontology.org/ontologies/SNOMEDCT> {
-                            ?snomedstart a owl:Class ;
-                                         skos:prefLabel ?snomedlab1 .
-                            ?snomedsub rdfs:subClassOf* ?snomedstart ;
-                                                      skos:prefLabel ?snomedlab2 .
-                            optional {
-                                ?snomedsub ?p ?o .
-                                ?o skos:prefLabel ?l
-                                filter(isuri(?o))
-                                filter(?p not in (snomed:associated_finding_of, snomed:focus_of, umls:hasSTY))
-                            }
-                        }
-                        graph <http://example.com/resource/materializedCuis> {
-                            ?snomedsub <http://example.com/resource/materializedCui> ?cui .
-                            # ICD parents from SNOMED... get subcodes
-                            ?icdstart <http://example.com/resource/materializedCui> ?cui .
-                        }
-                        {
-                            {
-                                graph <http://data.bioontology.org/ontologies/ICD9CM/> {
-                                    ?icdstart a owl:Class ;
-                                              skos:prefLabel ?icdlab1 .
-                                    ?icdsub rdfs:subClassOf* ?icdstart .
-                                }
-                            }
-                            union
-                            {
-                                graph <http://data.bioontology.org/ontologies/ICD10CM/> {
-                                    ?icdstart a owl:Class ;
-                                              skos:prefLabel ?icdlab1 .
-                                    ?icdsub rdfs:subClassOf* ?icdstart .
-                                }
-                            }
-                        }
-                    }
-                    union
-                    {
-                        GRAPH obo:mondo.owl
-                        {
-                           ?mondosub oboInOwl:hasDbXref  ?dbxr
-                            FILTER strstarts(?dbxr, "ICD")
-                            BIND(strafter(?dbxr, ":") AS ?referencedcode)
-                        }
-                        # ICD parents from MonDO dbxrefs... stop here
-                        ?icdsub skos:notation ?referencedcode
-                    }
+                    ?mondosub <http://graphBuilder.org/mapsTo> ?icdsub .
                 }
-                ?icdsub  skos:prefLabel ?icdlab2 .
             }
         """
         val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()

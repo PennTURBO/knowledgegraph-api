@@ -50,6 +50,7 @@ case class LuceneMedResults(searchTerm: String, luceneResults: Array[String])
 case class LuceneDiagResults(searchTerm: String, luceneResults: Array[String])
 case class DrugClassInputs(searchList: Array[String])
 case class DrugResults(resultsList: Map[String, Array[String]])
+case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
@@ -58,6 +59,56 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   before()
   {
       contentType = formats("json")
+  }
+
+  post("/diagnoses/getDiseaseURIsFromICDCodes")
+  {
+      logger.info("Received a post request")
+      var cxn: RepositoryConnection = null
+      var repository: Repository = null
+      var repoManager: RemoteRepositoryManager = null
+      var neo4jgraph: Neo4jGraph = null
+      var parsedResult: Array[String] = null
+
+      try 
+      { 
+          val userInput = request.body
+          logger.info("received: " + userInput)
+          val extractedResult = parse(userInput).extract[DrugClassInputs]
+          parsedResult = extractedResult.searchList
+          logger.info("extracted search term")
+
+          try
+          {
+              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+              repoManager.initialize()
+              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
+              cxn = repository.getConnection()
+              logger.info("Successfully connected to triplestore")
+            
+              val graphDB: GraphDBConnector = new GraphDBConnector
+              TwoDimensionalArrListResults(graphDB.getDiseaseURIs(parsedResult, cxn))
+          }
+          catch
+          {
+              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
+          finally
+          {
+              cxn.close()
+              repository.shutDown()
+              repoManager.shutDown()
+              logger.info("Connections closed.")
+              println()
+          }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
   }
 
   post("/diagnoses/getICDCodesFromDiseaseURI")

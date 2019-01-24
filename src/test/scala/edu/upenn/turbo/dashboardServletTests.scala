@@ -150,6 +150,30 @@ class dashboardServletTests extends ScalatraFunSuite {
       }
   }
   
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes bad params")
+  {
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{bad_param}")
+      {
+        status should equal (400)
+      }
+  }
+
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes with params")
+  {
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{\"searchList\":[\"http://purl.bioontology.org/ontology/ICD9CM/285.9\", \"http://purl.bioontology.org/ontology/ICD10CM/E00\", \"http://purl.bioontology.org/ontology/ICD9CM/103.9\"]}")
+      {
+        status should equal (200)
+      }
+  }
+  
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes no params")
+  {
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes")
+      {
+        status should equal (400)
+      }
+  }
+  
   test("POST /medications/findHopsAwayFromDrug bad params")
   {
       val res = post("/medications/findHopsAwayFromDrug", "{bad_param}")
