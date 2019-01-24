@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
 
 class Neo4jConnector 
 {
-    val logger = LoggerFactory.getLogger(getClass)
+    val logger = LoggerFactory.getLogger("turboAPIlogger")
     def getOrderNames(mappedTerm: String, g: GraphTraversalSource): Array[String] =
     {
         logger.info("Starting graph traversal")

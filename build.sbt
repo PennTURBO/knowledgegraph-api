@@ -4,7 +4,7 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   scalaVersion in ThisBuild := "2.11.8",
   test in assembly := {},
-  name := "Dashboard"
+  name := "TurboAPI"
 )
 
 val ScalatraVersion = "2.6.3"
@@ -18,7 +18,7 @@ lazy val app = (project in file("app")).
 lazy val utils = (project in file("utils")).
   settings(commonSettings: _*).
   settings(
-    assemblyJarName in assembly := "dashboard.jar",
+    assemblyJarName in assembly := "turboAPI.jar",
   )
 
 assemblyMergeStrategy in assembly := {
@@ -68,7 +68,7 @@ resolvers += Classpaths.typesafeReleases
 libraryDependencies ++= Seq(
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
-  "ch.qos.logback" % "logback-classic" % "1.2.3" % "runtime",
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
   "org.eclipse.jetty" % "jetty-webapp" % "9.4.9.v20180320" % "container;compile",
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
   "org.json4s" % "json4s-jackson_2.11" % "3.5.2",
