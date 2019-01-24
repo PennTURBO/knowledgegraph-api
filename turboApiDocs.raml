@@ -1,6 +1,6 @@
 #%RAML 1.0
 ---
-title: TURBO Dashboard API
+title: TURBO API
 baseURI: turbo-dev-app01.pmacs.upenn.edu:8089/
 version: 0.0.1
 
@@ -68,6 +68,24 @@ version: 0.0.1
 		            {
     				  "message": "Unable to parse JSON"
 				    }
+    /lastGraphUpdate:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                {
+				    "dateOfUpdate": "2018-11-27",
+				    "timeOfUpdate": "19:13:59"
+				}
+		500:
+		  body:
+		    application/json:
+		      example:
+		        {
+				    "message": "Graph file not found"
+				}
 
 /diagnoses
 	/luceneDiagLookup
@@ -133,23 +151,40 @@ version: 0.0.1
 			       {
 	    		     "message": "Unable to parse JSON"
 			       }
-
-/graph
-    /lastGraphUpdate:
-    get:
-      responses:
-        200:
-          body:
-            application/json:
-              example:
-                {
-				    "dateOfUpdate": "2018-11-27",
-				    "timeOfUpdate": "19:13:59"
-				}
-		500:
-		  body:
-		    application/json:
-		      example:
-		        {
-				    "message": "Graph file not found"
-				}
+	/getDiseaseURIsFromICDCodes
+	post:
+	  queryParameters:
+        ICDCodeList:
+          displayName: searchList
+          type: JSON String Array
+          description: List of ICD9 or ICD10 codes (can mix and match)
+          example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"]}
+          required: true
+          responses:
+            200:
+              body:
+                application/json
+		          example: 
+		            {
+					    "mappedInputTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
+					    {
+					    "resultsList": [
+					        [
+					            "http://purl.bioontology.org/ontology/ICD9CM/759.89",
+					            "http://purl.obolibrary.org/obo/MONDO_0007534",
+					            "\"Beckwith-Wiedemann syndrome\""
+					        ],
+					        [
+					            "http://purl.bioontology.org/ontology/ICD9CM/759.89",
+					            "http://purl.obolibrary.org/obo/MONDO_0016006",
+					            "\"Cockayne syndrome\""
+					        ],...
+					    }
+					},
+		    400:
+	     	  body:
+			    application/json:
+			      example:
+			       {
+	    		     "message": "Unable to parse JSON"
+			       }
