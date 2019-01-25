@@ -26,8 +26,7 @@ import org.slf4j.LoggerFactory
 
 class GraphDBConnector 
 {
-<<<<<<< HEAD
-    val logger = LoggerFactory.getLogger(getClass)
+    val logger = LoggerFactory.getLogger("turboAPIlogger")
 
     def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
     {
@@ -77,9 +76,6 @@ class GraphDBConnector
         resultList.toArray
     }
 
-=======
-    val logger = LoggerFactory.getLogger("turboAPIlogger")
->>>>>>> ae3b0ec0d1c99d88851e714ba12f08e9a8c9dc7d
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
     {
         val query = """
@@ -102,7 +98,7 @@ class GraphDBConnector
                     ?mondosub rdfs:subClassOf* ?mondostart ;
                                              rdfs:label ?mlab2 .
                 }
-                graph <http://graphBuilder.org/mondoToIcdMappings>
+                graph <http://graphBuilder.org/mondoToIcdMappingsFullSemantics>
                 {
                     ?mondosub <http://graphBuilder.org/mapsTo> ?icdsub .
                 }

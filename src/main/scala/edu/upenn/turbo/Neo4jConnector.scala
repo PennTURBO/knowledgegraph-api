@@ -8,15 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has
 import org.apache.tinkerpop.gremlin.process.traversal.P._
-import org.eclipse.rdf4j.query.QueryLanguage
-import org.eclipse.rdf4j.query.TupleQuery
-import org.eclipse.rdf4j.query.TupleQueryResult
-import org.eclipse.rdf4j.repository.RepositoryConnection
-import org.eclipse.rdf4j.query.BooleanQuery
-import org.eclipse.rdf4j.query.BindingSet
-import org.eclipse.rdf4j.model.Value
-import org.eclipse.rdf4j.repository.Repository
-import org.eclipse.rdf4j.OpenRDFException
+
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -60,7 +52,7 @@ class Neo4jConnector
         finalList
     }
 
-    def getHopsAwayFromDrug(startTerm: Array[String], g: GraphTraversalSource): Map[String, Array[String]] =
+    def getHopsAwayFromTopLevelClass(startTerm: Array[String], topLevelClass: String, g: GraphTraversalSource): Map[String, Array[String]] =
     {
         var res = new HashMap[String, Array[String]]
         logger.info("received input of size: " + startTerm.size)
@@ -69,11 +61,20 @@ class Neo4jConnector
             logger.info("scanning uri: " + a)
             val result = g.V().has("uri", a).
             repeat(out("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).emit()
-            .times(7).has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888")/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/
+            .times(10).has("uri", topLevelClass)/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/
             .path().by("uri").toList.toArray
 
             var buffToSet = new ArrayBuffer[String]
-            for (b <- result) buffToSet += b.toString
+            var currentSmallest = 999
+            for (b <- result)
+            {
+                val currRes = b.toString
+                if (currRes.split(",").size <= currentSmallest)
+                {
+                    buffToSet += b.toString
+                    currentSmallest = currRes.split(",").size
+                }
+            }
             logger.info("collected results in array")
             val finalList = buffToSet.toArray
             logger.info("final size: " + finalList.size)

@@ -12,7 +12,7 @@ import java.nio.file.{Files, Paths}
 import java.nio.file.attribute.BasicFileAttributes
 
 // RDF4J imports
-import org.eclipse.rdf4j.rio._
+/*import org.eclipse.rdf4j.rio._
 import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.eclipse.rdf4j.query.QueryLanguage
@@ -27,12 +27,13 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.rio.RDFFormat
+import org.eclipse.rdf4j.repository.RepositoryConnection*/
+
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
 import java.util.Properties
 import java.io.FileInputStream
-import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ArrayBuffer
+import java.io.File
 
 case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
@@ -61,7 +63,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       contentType = formats("json")
   }
 
-  post("/diagnoses/getDiseaseURIsFromICDCodes")
+  /*post("/diagnoses/getDiseaseURIsFromICDCodes")
   {
       logger.info("Received a post request")
       var cxn: RepositoryConnection = null
@@ -409,10 +411,13 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: Throwable => InternalServerError(Map("message" -> "Unknown server error occurred"))
       }
       
-  }
+  }*/
 
   post("/medications/findHopsAwayFromDrug")
   {
+      /*val graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File("mondo.graph")).newGraphDatabase()
+      graphDb.execute("CREATE INDEX ON :Resource(uri)")
+      graphDb.execute("CALL semantics.importRDF(\"file:///C://Users//hfree//Drivetrain//drivetrain//mondo.ttl\",\"Turtle\", { shortenUrls: false, typesToLabels: false, commitSize: 9000 }) ")*/
       logger.info("Received a post request")
       var neo4jgraph: Neo4jGraph = null
       var parsedResult: Array[String] = null
@@ -427,7 +432,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           { 
               try 
               { 
-                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
+                  neo4jgraph = Neo4jGraph.open("mondo.graph")
               } 
               catch 
               {
@@ -437,7 +442,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               logger.info("Successfully connected to property graph")
             
               val neo4j: Neo4jConnector = new Neo4jConnector
-              DrugResults(neo4j.getHopsAwayFromDrug(parsedResult, g))
+              DrugResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
           }
           finally
           {
