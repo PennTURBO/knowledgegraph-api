@@ -5,7 +5,7 @@ baseURI: turbo-dev-app01.pmacs.upenn.edu:8089/
 version: 0.0.1
 
 /medications:
-  	/luceneMedLookup:
+  	/medicationTextSearch:
   	post:
   	  queryParameters:
   	    freeTextSearchTerm:
@@ -21,10 +21,19 @@ version: 0.0.1
   	              example:
                     {
 					    "searchTerm": "analgesic",
-					    "luceneResults": [
-					        "IRI: http://purl.obolibrary.org/obo/CHEBI_35480, label: analgesic",
-					        "IRI: http://purl.obolibrary.org/obo/CHEBI_35482, label: opioid analgesic",
-					        "IRI: http://purl.obolibrary.org/obo/CHEBI_35481, label: non-narcotic analgesic",
+					    "searchResults": [
+					      {
+				            "IRI": "http://purl.obolibrary.org/obo/CHEBI_35480",
+				            "label": "analgesic"
+					      },
+					      {
+					            "IRI": "http://purl.obolibrary.org/obo/CHEBI_35482",
+					            "label": "opioid analgesic"
+					      },
+					      {
+					            "IRI": "http://purl.obolibrary.org/obo/CHEBI_35481",
+					            "label": "non-narcotic analgesic"
+					      },
 					        ...
 					    ]
 					}
@@ -88,7 +97,7 @@ version: 0.0.1
 				}
 
 /diagnoses
-	/luceneDiagLookup
+	/diagnosisTextSearch:
 	post:
       queryParameters:
 	    freeTextSearchTerm:
@@ -104,10 +113,19 @@ version: 0.0.1
 		          example:
 		            {
 				      "searchTerm": "cancer",
-				      "luceneResults": [
-				        "IRI: http://purl.obolibrary.org/obo/MONDO_0011361, label: prostate cancer/brain cancer susceptibility",
-				        "IRI: http://purl.obolibrary.org/obo/MONDO_0004992, label: cancer",
-				        "IRI: http://purl.obolibrary.org/obo/MONDO_0002087, label: peritoneum cancer",
+				      "searchResults": [
+				          {
+				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
+				            "label": "gestational diabetes"
+				          },
+				          {
+				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005015",
+				            "label": "diabetes mellitus (disease)"
+				          },
+				          {
+				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005827",
+				            "label": "lipoatrophic diabetes"
+				          },
   						...
 				    	]
 				    },

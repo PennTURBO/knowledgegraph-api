@@ -115,4 +115,77 @@ class GraphDBConnector
         logger.info("result size: " + resultList.size)
         resultList.toArray
     }
+
+    def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
+    {
+          val query = """
+              PREFIX : <http://www.ontotext.com/connectors/lucene#>
+              PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
+              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+              SELECT ?entity ?score ?label {
+                  ?search a inst:role_via_rdfs_or_skos_label ;
+                          :query "role_via_rdfs_label:"""+userInput+""" OR role_via_skos_label:"""+userInput+"""" ;
+                                                             :entities ?entity .
+                  ?entity :score ?score .
+                  {
+                      {
+                          graph <http://data.bioontology.org/ontologies/RXNORM/submissions/15/download> 
+                          {
+                              ?entity skos:prefLabel ?label .
+                          }
+                      }
+                      union
+                      {
+                          graph <ftp://ftp.ebi.ac.uk/pub/databases/chebi/ontology/chebi_lite.owl.gz>
+                          {
+                              ?entity rdfs:label ?label .
+                          }
+                      }
+                  }
+              }
+              order by desc(?score)
+              limit 
+          """ + limit
+
+          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+          var buffResults = new ArrayBuffer[ArrayBuffer[String]]
+          while (tupleQueryResult.hasNext()) 
+          {
+              val nextResult = tupleQueryResult.next
+              val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
+              buffResults += singleResult
+          }
+          if (buffResults.size != 0) Some(buffResults)
+          else None
+      }
+
+      def getBestMatchTermForDiagnosisLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
+      {
+          val query = """
+              PREFIX : <http://www.ontotext.com/connectors/lucene#>
+              PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
+              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+              SELECT ?entity ?score ?label {
+                  ?search a inst:MONDO_labelsAndSynonyms ;
+                          :query "mondoLabel:"""+userInput+""" OR mondoExactSynonym:"""+userInput+"""" ;
+                                                     :entities ?entity .
+                  ?entity :score ?score .
+                  ?entity rdfs:label ?label .
+              }
+              order by desc(?score)
+              limit """ + limit
+
+          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+          var buffResults = new ArrayBuffer[ArrayBuffer[String]]
+          while (tupleQueryResult.hasNext()) 
+          {
+              val nextResult = tupleQueryResult.next
+              val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
+              buffResults += singleResult
+          }
+          if (buffResults.size != 0) Some(buffResults)
+          else None
+      }
 }

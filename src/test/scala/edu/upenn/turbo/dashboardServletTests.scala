@@ -46,33 +46,33 @@ class dashboardServletTests extends ScalatraFunSuite {
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup with params")
+  test("POST /diagnoses/diagnosisTextSearch with params")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{\"searchTerm\":\"diabetes\"}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{\"searchTerm\":\"diabetes\"}")
       {
         status should equal (200)
       }
   }
 
-  test("POST /diagnoses/luceneDiagLookup no params")
+  test("POST /diagnoses/diagnosisTextSearch no params")
   {
-      val res = post("/diagnoses/luceneDiagLookup")
+      val res = post("/diagnoses/diagnosisTextSearch")
       {
         status should equal (400)
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup bad params")
+  test("POST /diagnoses/diagnosisTextSearch bad params")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{bad_param}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{bad_param}")
       {
         status should equal (400)
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup params with no results")
+  test("POST /diagnoses/diagnosisTextSearch params with no results")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{\"searchTerm\":\"not_a_disease\"}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{\"searchTerm\":\"not_a_disease\"}")
       {
         status should equal (204)
       }
@@ -102,33 +102,33 @@ class dashboardServletTests extends ScalatraFunSuite {
       }
   }
   
-  test("POST /medications/luceneMedLookup with params")
+  test("POST /medications/medicationTextSearch with params")
   {
-      val res = post("/medications/luceneMedLookup", "{\"searchTerm\":\"analgesic\"}")
+      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"analgesic\"}")
       {
         status should equal (200)
       }
   }
   
-  test("POST /medications/luceneMedLookup no params")
+  test("POST /medications/medicationTextSearch no params")
   {
-      val res = post("/medications/luceneMedLookup")
+      val res = post("/medications/medicationTextSearch")
       {
         status should equal (400)
       }
   }
   
-  test("POST /medications/luceneMedLookup params with no results")
+  test("POST /medications/medicationTextSearch params with no results")
   {
-      val res = post("/medications/luceneMedLookup", "{\"searchTerm\":\"not_a_med\"}")
+      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"not_a_med\"}")
       {
         status should equal (204)
       }
   }
   
-  test("POST /medications/luceneMedLookup bad params")
+  test("POST /medications/medicationTextSearch bad params")
   {
-      val res = post("/medications/luceneMedLookup", "{bad_param}")
+      val res = post("/medications/medicationTextSearch", "{bad_param}")
       {
         status should equal (400)
       }

@@ -56,9 +56,11 @@ class Neo4jConnector
     {
         var res = new HashMap[String, Array[String]]
         logger.info("received input of size: " + startTerm.size)
+        var count = 0
         for (a <- startTerm)
         {
-            logger.info("scanning uri: " + a)
+            logger.info("scanning uri: " + a + " at index " + count)
+            count = count + 1
             val result = g.V().has("uri", a).
             repeat(out("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).emit()
             .times(10).has("uri", topLevelClass)/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/

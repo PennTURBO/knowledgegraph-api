@@ -12,7 +12,7 @@ import java.nio.file.{Files, Paths}
 import java.nio.file.attribute.BasicFileAttributes
 
 // RDF4J imports
-/*import org.eclipse.rdf4j.rio._
+import org.eclipse.rdf4j.rio._
 import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.eclipse.rdf4j.query.QueryLanguage
@@ -27,7 +27,7 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.rio.RDFFormat
-import org.eclipse.rdf4j.repository.RepositoryConnection*/
+import org.eclipse.rdf4j.repository.RepositoryConnection
 
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
@@ -48,8 +48,8 @@ import java.io.File
 case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class FullNameInput(searchTerm: String)
-case class LuceneMedResults(searchTerm: String, luceneResults: Array[String])
-case class LuceneDiagResults(searchTerm: String, luceneResults: Array[String])
+case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
+case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String])
 case class DrugResults(resultsList: Map[String, Array[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
@@ -57,13 +57,15 @@ case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
 {
   val logger = LoggerFactory.getLogger("turboAPIlogger")
+  val graphDB: GraphDBConnector = new GraphDBConnector
+  val neo4j: Neo4jConnector = new Neo4jConnector
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
       contentType = formats("json")
   }
 
-  /*post("/diagnoses/getDiseaseURIsFromICDCodes")
+  post("/diagnoses/getDiseaseURIsFromICDCodes")
   {
       logger.info("Received a post request")
       var cxn: RepositoryConnection = null
@@ -89,7 +91,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn = repository.getConnection()
               logger.info("Successfully connected to triplestore")
             
-              val graphDB: GraphDBConnector = new GraphDBConnector
               TwoDimensionalArrListResults(graphDB.getDiseaseURIs(parsedResult, cxn))
           }
           catch
@@ -139,7 +140,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn = repository.getConnection()
               logger.info("Successfully connected to triplestore")
             
-              val graphDB: GraphDBConnector = new GraphDBConnector
               FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, cxn))
           }
           catch
@@ -186,7 +186,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                   case e: Throwable => e.printStackTrace()
               }
               val g: GraphTraversalSource = neo4jgraph.traversal()
-              val neo4j: Neo4jConnector = new Neo4jConnector
               logger.info("Successfully connected to property graph")
               FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
           }
@@ -205,7 +204,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/medications/luceneMedLookup")
+  post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
       var cxn: RepositoryConnection = null
@@ -227,7 +226,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn = repository.getConnection()
               logger.info("Successfully connected to triplestore")
             
-              val topResults = getBestMatchTermForMedicationLookup(cxn, parsedResult, 10)
+              val topResults = graphDB.getBestMatchTermForMedicationLookup(cxn, parsedResult, 10)
               if (topResults == None)
               {
                   val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
@@ -235,13 +234,13 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               }
               else
               {
-                  var luceneResAsStrings = new ArrayBuffer[String]
+                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
                   for (a <- topResults.get)
                   {
-                     val strToAdd = "IRI: " + a(0) + ", label: " + a(1).replaceAll("@en", "").replaceAll("\"", "")
-                     luceneResAsStrings += strToAdd
+                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                     luceneResAsMaps += tempMap
                   }
-                  LuceneMedResults(parsedResult, luceneResAsStrings.toArray)
+                  LuceneMedResults(parsedResult, luceneResAsMaps.toArray)
               }
           }
           finally
@@ -261,7 +260,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/diagnoses/luceneDiagLookup")
+  post("/diagnoses/diagnosisTextSearch")
   {
       logger.info("Received a post request")
       var cxn: RepositoryConnection = null
@@ -283,7 +282,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               cxn = repository.getConnection()
               logger.info("Successfully connected to triplestore")
             
-              val topResults = getBestMatchTermForDiagnosisLookup(cxn, parsedResult, 10)
+              val topResults = graphDB.getBestMatchTermForDiagnosisLookup(cxn, parsedResult, 10)
               if (topResults == None)
               {
                   val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
@@ -291,13 +290,13 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               }
               else
               {
-                  var luceneResAsStrings = new ArrayBuffer[String]
+                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
                   for (a <- topResults.get)
                   {
-                     val strToAdd = "IRI: " + a(0) + ", label: " + a(1).replaceAll("@en", "").replaceAll("\"", "")
-                     luceneResAsStrings += strToAdd
+                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                     luceneResAsMaps += tempMap
                   }
-                  LuceneDiagResults(parsedResult, luceneResAsStrings.toArray)
+                  LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
               }
           }
           finally
@@ -315,79 +314,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }
-  
-  def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
-  {
-      val query = """
-          PREFIX : <http://www.ontotext.com/connectors/lucene#>
-          PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-          SELECT ?entity ?score ?label {
-              ?search a inst:role_via_rdfs_or_skos_label ;
-                      :query "role_via_rdfs_label:"""+userInput+""" OR role_via_skos_label:"""+userInput+"""" ;
-                                                         :entities ?entity .
-              ?entity :score ?score .
-              {
-                  {
-                      graph <http://data.bioontology.org/ontologies/RXNORM/submissions/15/download> 
-                      {
-                          ?entity skos:prefLabel ?label .
-                      }
-                  }
-                  union
-                  {
-                      graph <ftp://ftp.ebi.ac.uk/pub/databases/chebi/ontology/chebi_lite.owl.gz>
-                      {
-                          ?entity rdfs:label ?label .
-                      }
-                  }
-              }
-          }
-          order by desc(?score)
-          limit 
-      """ + limit
-
-      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-      while (tupleQueryResult.hasNext()) 
-      {
-          val nextResult = tupleQueryResult.next
-          val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-          buffResults += singleResult
-      }
-      if (buffResults.size != 0) Some(buffResults)
-      else None
-  }
-
-  def getBestMatchTermForDiagnosisLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
-  {
-      val query = """
-          PREFIX : <http://www.ontotext.com/connectors/lucene#>
-          PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-          SELECT ?entity ?score ?label {
-              ?search a inst:MONDO_labelsAndSynonyms ;
-                      :query "mondoLabel:"""+userInput+""" OR mondoExactSynonym:"""+userInput+"""" ;
-                                                 :entities ?entity .
-              ?entity :score ?score .
-              ?entity rdfs:label ?label .
-          }
-          order by desc(?score)
-          limit """ + limit
-
-      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-      while (tupleQueryResult.hasNext()) 
-      {
-          val nextResult = tupleQueryResult.next
-          val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-          buffResults += singleResult
-      }
-      if (buffResults.size != 0) Some(buffResults)
-      else None
   }
 
   get("/medications/lastGraphUpdate")
@@ -411,13 +337,10 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: Throwable => InternalServerError(Map("message" -> "Unknown server error occurred"))
       }
       
-  }*/
+  }
 
   post("/medications/findHopsAwayFromDrug")
   {
-      /*val graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File("mondo.graph")).newGraphDatabase()
-      graphDb.execute("CREATE INDEX ON :Resource(uri)")
-      graphDb.execute("CALL semantics.importRDF(\"file:///C://Users//hfree//Drivetrain//drivetrain//mondo.ttl\",\"Turtle\", { shortenUrls: false, typesToLabels: false, commitSize: 9000 }) ")*/
       logger.info("Received a post request")
       var neo4jgraph: Neo4jGraph = null
       var parsedResult: Array[String] = null
@@ -441,7 +364,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               val g: GraphTraversalSource = neo4jgraph.traversal()
               logger.info("Successfully connected to property graph")
             
-              val neo4j: Neo4jConnector = new Neo4jConnector
               DrugResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
           }
           finally
