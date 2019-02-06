@@ -39,7 +39,7 @@ version: 0.0.1
 					}
 		    204:
 			  header:
-			    message:Your input of "cancer" returned no matches.
+			    message:Your input of "notADisease" returned no matches.
 			400:
 			  body:
 				application/json:
@@ -104,7 +104,7 @@ version: 0.0.1
 		  displayName: searchTerm
 		  type: JSON String
 		  description: free text input to be mapped to a set of potentially matching ontology disease terms
-		  example: {"searchTerm":"cancer"}
+		  example: {"searchTerm":"diabetes"}
 		  required: true
 		  repsonses:
 		    200:
@@ -112,7 +112,7 @@ version: 0.0.1
 		        application/json
 		          example:
 		            {
-				      "searchTerm": "cancer",
+				      "searchTerm": "diabetes",
 				      "searchResults": [
 				          {
 				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
@@ -131,7 +131,7 @@ version: 0.0.1
 				    },
 		    204:
 			  header:
-			    message:Your input of "cancer" returned no matches.
+			    message:Your input of "notADisease" returned no matches.
 			400:
 			  body:
 				application/json:
