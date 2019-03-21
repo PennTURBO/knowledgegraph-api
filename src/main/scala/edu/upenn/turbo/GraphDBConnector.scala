@@ -32,45 +32,41 @@ class GraphDBConnector
     {
         var startListAsString = ""
         for (code <- startingCodes) startListAsString += " <" + code + "> "
-
-        val query = """
+        logger.info("launching query to Graph DB")
+        val query = s"""
             PREFIX obo: <http://purl.obolibrary.org/obo/>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
-            PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
             PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
-            PREFIX turbo: <http://transformunify.org/ontologies/>
-
-            select
-            distinct ?icdsub ?mondosub ?mlab2
-            where {
-                 values ?icdsub {
-                     """ + startListAsString + """
-                 }
-                graph obo:mondo.owl {
-                    #      ?mondostart rdfs:label ?mlab1 .
-                    #      ?mondosub rdfs:subClassOf* ?mondostart ;
-                    #                               rdfs:label ?mlab2 .
-                    ?mondosub rdfs:label ?mlab2 .
-                }
-                graph <http://graphBuilder.org/mondoToIcdMappings>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX j.0: <http://example.com/resource/>
+            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
+            select distinct ?icd ?mondo ?mlabel ?method where
+            {
+                values ?icd {$startListAsString}
+                graph ?g 
                 {
-                    ?mondosub <http://graphBuilder.org/mapsTo> ?icdsub .
+                    ?mondo <http://graphBuilder.org/mapsTo> ?icd .
                 }
-            }"""
+                graph obo:mondo.owl
+                {
+                    ?mondo rdfs:label ?mlabel .
+                }
+                ?g <http://graphBuilder.org/usedMethod> ?method .
+            }
+            order by ?icd ?mondo"""
 
         val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
         val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
         while (tupleQueryResult.hasNext()) 
         {
             val bindingset: BindingSet = tupleQueryResult.next()
-            var icdSub: String = bindingset.getValue("icdsub").toString
-            var mondoSub: String = bindingset.getValue("mondosub").toString
-            var mondoLabel: String = bindingset.getValue("mlab2").toString
-            logger.info(icdSub + " " + mondoSub + " " + mondoLabel)
-            resultList += Array(icdSub, mondoSub, mondoLabel)
+            var icdSub: String = bindingset.getValue("icd").toString
+            var mondoSub: String = bindingset.getValue("mondo").toString
+            var mondoLabel: String = bindingset.getValue("mlabel").toString
+            var method: String = bindingset.getValue("method").toString
+            //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
+            resultList += Array(icdSub, mondoSub, mondoLabel, method)
         }
         logger.info("result size: " + resultList.size)
         resultList.toArray

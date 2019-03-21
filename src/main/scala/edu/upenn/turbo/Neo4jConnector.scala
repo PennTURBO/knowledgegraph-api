@@ -68,6 +68,7 @@ class Neo4jConnector
 
             var buffToSet = new ArrayBuffer[String]
             var currentSmallest = 999
+            logger.info("number of paths found: " + result.size)
             for (b <- result)
             {
                 val currRes = b.toString
