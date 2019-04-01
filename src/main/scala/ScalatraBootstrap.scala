@@ -2,8 +2,32 @@ import edu.upenn.turbo._
 import org.scalatra._
 import javax.servlet.ServletContext
 
+import org.slf4j.LoggerFactory
+
+import scala.collection.mutable.ArrayBuffer
+import java.io.File
+
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+
 class ScalatraBootstrap extends LifeCycle {
+
+  var neo4jgraph: Neo4jGraph = null
+
+  override def destroy(context: ServletContext) 
+  {
+      println("closing graph connections")
+      neo4jgraph.close()
+  }
+
   override def init(context: ServletContext) {
+
+    //establish connections to graph databases
+    neo4jgraph = Neo4jGraph.open("neo4j.graph")
+    Neo4jGraphConnection.setGraph(neo4jgraph)
+
     context.mount(new DashboardServlet, "/*")
   	println("""
 

@@ -34,16 +34,17 @@ import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
 import java.util.Properties
 import java.io.FileInputStream
-import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import com.fasterxml.jackson.databind.JsonMappingException
 
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
+
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 
 case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
@@ -54,11 +55,12 @@ case class DrugClassInputs(searchList: Array[String])
 case class DrugResults(resultsList: Map[String, Array[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 
-class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
+class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 {
-  val logger = LoggerFactory.getLogger("turboAPIlogger")
   val graphDB: GraphDBConnector = new GraphDBConnector
   val neo4j: Neo4jConnector = new Neo4jConnector
+  val logger = LoggerFactory.getLogger("turboAPIlogger")
+  val neo4jgraph = Neo4jGraphConnection.getGraph()
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -71,7 +73,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       var cxn: RepositoryConnection = null
       var repository: Repository = null
       var repoManager: RemoteRepositoryManager = null
-      var neo4jgraph: Neo4jGraph = null
       var parsedResult: Array[String] = null
 
       try 
@@ -166,7 +167,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/medications/findOrderNamesFromInputURI")
   {
       logger.info("Received a post request")
-      var neo4jgraph: Neo4jGraph = null
       var parsedResult: String = null
 
       try 
@@ -175,23 +175,16 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
           logger.info("Input class: " + parsedResult)
+          var g: GraphTraversalSource = null
           try 
           { 
-              try 
-              { 
-                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
-              } 
-              catch 
-              {
-                  case e: RuntimeException => logger.info("exception thrown", e)
-              }
-              val g: GraphTraversalSource = neo4jgraph.traversal()
+              g = neo4jgraph.traversal()
               logger.info("Successfully connected to property graph")
               FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
           }
           finally
           {
-              neo4jgraph.close()
+              g.close()
               logger.info("Connections closed.")
               println()
           }
@@ -342,7 +335,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/medications/findHopsAwayFromDrug")
   {
       logger.info("Received a post request")
-      var neo4jgraph: Neo4jGraph = null
       var parsedResult: Array[String] = null
 
       try 
@@ -351,24 +343,17 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val extractedResult = parse(userInput).extract[DrugClassInputs]
           parsedResult = extractedResult.searchList
           logger.info("Input class: " + parsedResult)
+          var g: GraphTraversalSource = null
           try 
           { 
-              try 
-              { 
-                  neo4jgraph = Neo4jGraph.open("mondo.graph")
-              } 
-              catch 
-              {
-                  case e: Throwable => e.printStackTrace()
-              }
-              val g: GraphTraversalSource = neo4jgraph.traversal()
+              g = neo4jgraph.traversal()
               logger.info("Successfully connected to property graph")
             
               DrugResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
           }
           finally
           {
-              neo4jgraph.close()
+              g.close()
               logger.info("Connections closed.")
               println()
           }
