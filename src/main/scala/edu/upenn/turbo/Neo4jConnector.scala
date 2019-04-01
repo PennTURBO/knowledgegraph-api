@@ -71,19 +71,21 @@ class Neo4jConnector
             count = count + 1
             val result = g.V().has("uri", a).
             repeat(out("http://www.w3.org/2000/01/rdf-schema#subClassOf").simplePath()).emit()
-            .times(10).has("uri", topLevelClass)/*.until(has("uri", "http://purl.obolibrary.org/obo/CHEBI_23888"))*/
+            /*.times(10).has("uri", topLevelClass)*/.until(has("uri", topLevelClass))
             .path().by("uri").toList.toArray
 
             var buffToSet = new ArrayBuffer[String]
-            var currentSmallest = 999
+            var currentSmallest = Int.MaxValue
             logger.info("number of paths found: " + result.size)
             for (b <- result)
             {
-                val currRes = b.toString
-                if (currRes.split(",").size <= currentSmallest)
+                val currRes = b.toString.split(",")
+                println("res: " + b.toString)
+                if (currRes(currRes.size-1).replaceAll(" ","").replaceAll("\\]","") == topLevelClass 
+                    && currRes.size <= currentSmallest)
                 {
                     buffToSet += b.toString
-                    currentSmallest = currRes.split(",").size
+                    currentSmallest = currRes.size
                 }
             }
             logger.info("collected results in array")
