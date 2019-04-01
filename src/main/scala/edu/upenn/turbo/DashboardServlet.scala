@@ -183,7 +183,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               } 
               catch 
               {
-                  case e: Throwable => e.printStackTrace()
+                  case e: RuntimeException => logger.info("exception thrown", e)
               }
               val g: GraphTraversalSource = neo4jgraph.traversal()
               logger.info("Successfully connected to property graph")

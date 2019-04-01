@@ -30,51 +30,61 @@ class GraphDBConnector
 
     def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
     {
-        var startListAsString = ""
-        for (code <- startingCodes) startListAsString += " <" + code + "> "
-        logger.info("launching query to Graph DB")
-        val query = s"""
-            PREFIX obo: <http://purl.obolibrary.org/obo/>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
-            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-            PREFIX j.0: <http://example.com/resource/>
-            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
-            select distinct ?icd ?mondo ?mlabel ?method where
-            {
-                values ?icd {$startListAsString}
-                graph ?g 
-                {
-                    ?mondo <http://graphBuilder.org/mapsTo> ?icd .
-                }
-                graph obo:mondo.owl
-                {
-                    ?mondo rdfs:label ?mlabel .
-                }
-                ?g <http://graphBuilder.org/usedMethod> ?method .
-            }
-            order by ?icd ?mondo"""
-
-        val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-        val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
-        while (tupleQueryResult.hasNext()) 
+        try 
         {
-            val bindingset: BindingSet = tupleQueryResult.next()
-            var icdSub: String = bindingset.getValue("icd").toString
-            var mondoSub: String = bindingset.getValue("mondo").toString
-            var mondoLabel: String = bindingset.getValue("mlabel").toString
-            var method: String = bindingset.getValue("method").toString
-            //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
-            resultList += Array(icdSub, mondoSub, mondoLabel, method)
+          var startListAsString = ""
+          for (code <- startingCodes) startListAsString += " <" + code + "> "
+          logger.info("launching query to Graph DB")
+          val query = s"""
+              PREFIX obo: <http://purl.obolibrary.org/obo/>
+              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              PREFIX owl: <http://www.w3.org/2002/07/owl#>
+              PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+              PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+              PREFIX j.0: <http://example.com/resource/>
+              PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
+              select distinct ?icd ?mondo ?mlabel ?method where
+              {
+                  values ?icd {$startListAsString}
+                  graph ?g 
+                  {
+                      ?mondo <http://graphBuilder.org/mapsTo> ?icd .
+                  }
+                  graph obo:mondo.owl
+                  {
+                      ?mondo rdfs:label ?mlabel .
+                  }
+                  ?g <http://graphBuilder.org/usedMethod> ?method .
+              }
+              order by ?icd ?mondo"""
+
+          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+          val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
+          while (tupleQueryResult.hasNext()) 
+          {
+              val bindingset: BindingSet = tupleQueryResult.next()
+              var icdSub: String = bindingset.getValue("icd").toString
+              var mondoSub: String = bindingset.getValue("mondo").toString
+              var mondoLabel: String = bindingset.getValue("mlabel").toString
+              var method: String = bindingset.getValue("method").toString
+              //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
+              resultList += Array(icdSub, mondoSub, mondoLabel, method)
+          }
+          logger.info("result size: " + resultList.size)
+          resultList.toArray
+        } 
+        catch 
+        {
+            case e: Throwable => logger.info("encountered exception", e)
+            return null
         }
-        logger.info("result size: " + resultList.size)
-        resultList.toArray
     }
 
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
     {
-        val query = """
+        try 
+        {
+            val query = s"""
             PREFIX obo: <http://purl.obolibrary.org/obo/>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -83,38 +93,42 @@ class GraphDBConnector
             PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
             PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
             PREFIX turbo: <http://transformunify.org/ontologies/>
-            select
-            distinct ?icdsub
-            where {
-                values ?mondostart {
-                    <"""+start+""">
-                }
-                graph obo:mondo.owl {
-                    ?mondostart rdfs:label ?mlab1 .
-                    ?mondosub rdfs:subClassOf* ?mondostart ;
-                                             rdfs:label ?mlab2 .
-                }
-                graph <http://graphBuilder.org/mondoToIcdMappingsFullSemantics>
+            select distinct ?icd ?method where
+            {
+                graph ?g 
                 {
-                    ?mondosub <http://graphBuilder.org/mapsTo> ?icdsub .
+                    <$start> <http://graphBuilder.org/mapsTo> ?icd .
                 }
+                graph obo:mondo.owl
+                {
+                    <$start> rdfs:label ?mlabel .
+                }
+                ?g <http://graphBuilder.org/usedMethod> ?method .
             }
-        """
-        val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-        val resultList: ArrayBuffer[String] = new ArrayBuffer[String]
-        while (tupleQueryResult.hasNext()) 
+          """
+          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+          val resultList: ArrayBuffer[String] = new ArrayBuffer[String]
+          while (tupleQueryResult.hasNext()) 
+          {
+              val bindingset: BindingSet = tupleQueryResult.next()
+              var result: String = bindingset.getValue("icd").toString
+              resultList += result
+          }
+          logger.info("result size: " + resultList.size)
+          resultList.toArray
+        } 
+        catch 
         {
-            val bindingset: BindingSet = tupleQueryResult.next()
-            var result: String = bindingset.getValue("icdsub").toString
-            resultList += result
+            case e: Throwable => logger.info("encountered exception", e)
+            return null
         }
-        logger.info("result size: " + resultList.size)
-        resultList.toArray
     }
 
     def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
     {
-          val query = """
+        try 
+        {
+            val query = """
               PREFIX : <http://www.ontotext.com/connectors/lucene#>
               PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
               PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -142,23 +156,31 @@ class GraphDBConnector
               }
               order by desc(?score)
               limit 
-          """ + limit
+              """ + limit
 
-          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-          var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-          while (tupleQueryResult.hasNext()) 
-          {
-              val nextResult = tupleQueryResult.next
-              val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-              buffResults += singleResult
-          }
-          if (buffResults.size != 0) Some(buffResults)
-          else None
+              val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+              var buffResults = new ArrayBuffer[ArrayBuffer[String]]
+              while (tupleQueryResult.hasNext()) 
+              {
+                  val nextResult = tupleQueryResult.next
+                  val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
+                  buffResults += singleResult
+              }
+              if (buffResults.size != 0) Some(buffResults)
+              else None
+        } 
+        catch 
+        {
+            case e: Throwable => logger.info("encountered exception", e)
+            return null
+        }
       }
 
       def getBestMatchTermForDiagnosisLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
       {
-          val query = """
+          try 
+          {
+              val query = """
               PREFIX : <http://www.ontotext.com/connectors/lucene#>
               PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
               PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -173,15 +195,21 @@ class GraphDBConnector
               order by desc(?score)
               limit """ + limit
 
-          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-          var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-          while (tupleQueryResult.hasNext()) 
+              val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+              var buffResults = new ArrayBuffer[ArrayBuffer[String]]
+              while (tupleQueryResult.hasNext()) 
+              {
+                  val nextResult = tupleQueryResult.next
+                  val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
+                  buffResults += singleResult
+              }
+              if (buffResults.size != 0) Some(buffResults)
+              else None
+          } 
+          catch 
           {
-              val nextResult = tupleQueryResult.next
-              val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-              buffResults += singleResult
+              case e: Throwable => logger.info("encountered exception", e)
+              return null
           }
-          if (buffResults.size != 0) Some(buffResults)
-          else None
       }
 }
