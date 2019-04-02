@@ -27,13 +27,10 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.rio.RDFFormat
-import org.eclipse.rdf4j.repository.RepositoryConnection
 
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
-import java.util.Properties
-import java.io.FileInputStream
 import com.fasterxml.jackson.databind.JsonMappingException
 
 import org.slf4j.LoggerFactory
@@ -61,6 +58,9 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   val neo4j: Neo4jConnector = new Neo4jConnector
   val logger = LoggerFactory.getLogger("turboAPIlogger")
   val neo4jgraph = Neo4jGraphConnection.getGraph()
+  val diagCxn = GraphDbConnection.getDiagConnection()
+  val medCxn = GraphDbConnection.getMedConnection()
+
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -70,11 +70,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/diagnoses/getDiseaseURIsFromICDCodes")
   {
       logger.info("Received a post request")
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
       var parsedResult: Array[String] = null
-
       try 
       { 
           val userInput = request.body
@@ -85,26 +81,11 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
           try
           {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-              cxn = repository.getConnection()
-              logger.info("Successfully connected to triplestore")
-            
-              TwoDimensionalArrListResults(graphDB.getDiseaseURIs(parsedResult, cxn))
+              TwoDimensionalArrListResults(graphDB.getDiseaseURIs(parsedResult, diagCxn))
           }
           catch
           {
               case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
-          }
-          finally
-          {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              logger.info("Connections closed.")
-              println()
           }
       } 
       catch 
@@ -118,12 +99,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/diagnoses/getICDCodesFromDiseaseURI")
   {
       logger.info("Received a post request")
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
-      var neo4jgraph: Neo4jGraph = null
       var parsedResult: String = null
-
       try 
       { 
           val userInput = request.body
@@ -133,27 +109,12 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           logger.info("extracted search term")
 
           try
-          {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-              cxn = repository.getConnection()
-              logger.info("Successfully connected to triplestore")
-            
-              FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, cxn))
+          { 
+              FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, diagCxn))
           }
           catch
           {
               case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
-          }
-          finally
-          {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              logger.info("Connections closed.")
-              println()
           }
       } 
       catch 
@@ -168,7 +129,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   {
       logger.info("Received a post request")
       var parsedResult: String = null
-
       try 
       { 
           val userInput = request.body
@@ -179,7 +139,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           try 
           { 
               g = neo4jgraph.traversal()
-              logger.info("Successfully connected to property graph")
+              logger.info("Successfully created graph traversal object")
               FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
           }
           finally
@@ -200,49 +160,27 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
       var parsedResult: String = null
-
       try 
       { 
           val userInput = request.body
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          try
+          val topResults = graphDB.getBestMatchTermForMedicationLookup(medCxn, parsedResult, 10)
+          if (topResults == None)
           {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("medications_repository"))
-              cxn = repository.getConnection()
-              logger.info("Successfully connected to triplestore")
-            
-              val topResults = graphDB.getBestMatchTermForMedicationLookup(cxn, parsedResult, 10)
-              if (topResults == None)
-              {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
-              }
-              else
-              {
-                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
-                  for (a <- topResults.get)
-                  {
-                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
-                     luceneResAsMaps += tempMap
-                  }
-                  LuceneMedResults(parsedResult, luceneResAsMaps.toArray)
-              }
+              val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+              NoContent(Map("message" -> noContentMessage))
           }
-          finally
+          else
           {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              logger.info("Connections closed.")
-              println()
+              var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
+              for (a <- topResults.get)
+              {
+                 var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                 luceneResAsMaps += tempMap
+              }
+              LuceneMedResults(parsedResult, luceneResAsMaps.toArray)
           }
       }
       catch 
@@ -256,49 +194,27 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/diagnoses/diagnosisTextSearch")
   {
       logger.info("Received a post request")
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
       var parsedResult: String = null
-
       try 
       { 
           val userInput = request.body
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          try
+          val topResults = graphDB.getBestMatchTermForDiagnosisLookup(diagCxn, parsedResult, 10)
+          if (topResults == None)
           {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-              cxn = repository.getConnection()
-              logger.info("Successfully connected to triplestore")
-            
-              val topResults = graphDB.getBestMatchTermForDiagnosisLookup(cxn, parsedResult, 10)
-              if (topResults == None)
-              {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
-              }
-              else
-              {
-                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
-                  for (a <- topResults.get)
-                  {
-                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
-                     luceneResAsMaps += tempMap
-                  }
-                  LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
-              }
+              val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+              NoContent(Map("message" -> noContentMessage))
           }
-          finally
+          else
           {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              logger.info("Connections closed.")
-              println()
+              var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
+              for (a <- topResults.get)
+              {
+                 var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                 luceneResAsMaps += tempMap
+              }
+              LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
           }
       }
       catch 
@@ -364,14 +280,5 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }
-  
-  def getFromProperties(key: String, file: String = "turboAPI.properties"): String =
-  {
-       val input: FileInputStream = new FileInputStream(file)
-       val props: Properties = new Properties()
-       props.load(input)
-       input.close()
-       props.getProperty(key)
   }
 }

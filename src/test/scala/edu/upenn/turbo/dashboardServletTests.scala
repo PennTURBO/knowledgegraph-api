@@ -1,10 +1,71 @@
 package edu.upenn.turbo
 
+import org.scalatest.BeforeAndAfterAll
 import org.scalatra.test.scalatest._
 
-class dashboardServletTests extends ScalatraFunSuite {
+import org.eclipse.rdf4j.repository.Repository
+import org.eclipse.rdf4j.repository.RepositoryConnection
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
+import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
+
+class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with DashboardProperties {
 
   addServlet(classOf[DashboardServlet], "/*")
+
+  override def beforeAll()
+  {
+      super.beforeAll()
+      //establish connections to graph databases
+      println("connecting to neo4j...")
+
+      val neo4jgraph = Neo4jGraph.open("neo4j.graph")
+      Neo4jGraphConnection.setGraph(neo4jgraph)
+
+      println("connecting to graph db...")
+
+      val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      diagRepoManager.initialize()
+      val diagRepository = diagRepoManager.getRepository(getFromProperties("diagnoses_repository"))
+      val diagCxn = diagRepository.getConnection()
+
+      GraphDbConnection.setDiagRepoManager(diagRepoManager)
+      GraphDbConnection.setDiagRepository(diagRepository)
+      GraphDbConnection.setDiagConnection(diagCxn)
+
+      val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      medRepoManager.initialize()
+      val medRepository = medRepoManager.getRepository(getFromProperties("medications_repository"))
+      val medCxn = medRepository.getConnection()
+
+      GraphDbConnection.setMedRepoManager(medRepoManager)
+      GraphDbConnection.setMedRepository(medRepository)
+      GraphDbConnection.setMedConnection(medCxn)
+  }
+  override def afterAll()
+  {
+      super.afterAll()
+      
+      val neo4jgraph = Neo4jGraphConnection.getGraph()
+      neo4jgraph.close()
+
+      val diagRepoManager = GraphDbConnection.getDiagRepoManager()
+      val diagRepository = GraphDbConnection.getDiagRepository()
+      val diagCxn = GraphDbConnection.getDiagConnection()
+
+      val medRepoManager = GraphDbConnection.getMedRepoManager()
+      val medRepository = GraphDbConnection.getMedRepository()
+      val medCxn = GraphDbConnection.getMedConnection()
+
+      diagCxn.close()
+      diagRepository.shutDown()
+      diagRepoManager.shutDown()
+
+      medCxn.close()
+      medRepository.shutDown()
+      medRepoManager.shutDown()
+  }
 
   test("GET / on dashboardServlet should return status 200") 
   {

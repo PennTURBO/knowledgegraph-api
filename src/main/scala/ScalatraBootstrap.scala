@@ -12,21 +12,73 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 
-class ScalatraBootstrap extends LifeCycle {
+import org.eclipse.rdf4j.repository.Repository
+import org.eclipse.rdf4j.repository.RepositoryConnection
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
 
-  var neo4jgraph: Neo4jGraph = null
+class ScalatraBootstrap extends LifeCycle with DashboardProperties {
 
   override def destroy(context: ServletContext) 
   {
-      println("closing graph connections")
+      val neo4jgraph = Neo4jGraphConnection.getGraph()
       neo4jgraph.close()
+
+      val diagRepoManager = GraphDbConnection.getDiagRepoManager()
+      val diagRepository = GraphDbConnection.getDiagRepository()
+      val diagCxn = GraphDbConnection.getDiagConnection()
+
+      val medRepoManager = GraphDbConnection.getMedRepoManager()
+      val medRepository = GraphDbConnection.getMedRepository()
+      val medCxn = GraphDbConnection.getMedConnection()
+
+      diagCxn.close()
+      diagRepository.shutDown()
+      diagRepoManager.shutDown()
+
+      medCxn.close()
+      medRepository.shutDown()
+      medRepoManager.shutDown()
   }
 
   override def init(context: ServletContext) {
 
     //establish connections to graph databases
-    neo4jgraph = Neo4jGraph.open("neo4j.graph")
+    println("connecting to neo4j...")
+    try 
+    {
+        val neo4jgraph = Neo4jGraph.open("neo4j.graph") 
+    } 
+    catch 
+    {
+        case e: Throwable => e.printStackTrace()
+    }
+    
+    println("established neo4j connection")
     Neo4jGraphConnection.setGraph(neo4jgraph)
+
+    println("connecting to graph db...")
+
+    val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+    diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+    diagRepoManager.initialize()
+    val diagRepository = diagRepoManager.getRepository(getFromProperties("diagnoses_repository"))
+    val diagCxn = diagRepository.getConnection()
+
+    GraphDbConnection.setDiagRepoManager(diagRepoManager)
+    GraphDbConnection.setDiagRepository(diagRepository)
+    GraphDbConnection.setDiagConnection(diagCxn)
+
+    val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+    medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+    medRepoManager.initialize()
+    val medRepository = medRepoManager.getRepository(getFromProperties("medications_repository"))
+    val medCxn = medRepository.getConnection()
+
+    GraphDbConnection.setMedRepoManager(medRepoManager)
+    GraphDbConnection.setMedRepository(medRepository)
+    GraphDbConnection.setMedConnection(medCxn)
+
+    println("established graph db connection")
 
     context.mount(new DashboardServlet, "/*")
   	println("""
