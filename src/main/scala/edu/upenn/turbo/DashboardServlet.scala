@@ -46,6 +46,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class FullNameInput(searchTerm: String)
+case class OmopConceptIdInput(searchTerm: String)
+case class OmopConceptIdUri(result: String)
+case class OmopConceptMap(result: Map[String, String])
 case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String])
@@ -60,6 +63,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   val neo4jgraph = Neo4jGraphConnection.getGraph()
   val diagCxn = GraphDbConnection.getDiagConnection()
   val medCxn = GraphDbConnection.getMedConnection()
+  val ontCxn = GraphDbConnection.getOntConnection()
 
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
@@ -222,6 +226,51 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
+  post("/ontologies/getUriFromOmopConceptId")
+  {
+      logger.info("Received a post request")
+      var parsedResult: String = null
+
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[OmopConceptIdInput]
+          parsedResult = extractedResult.searchTerm
+          parsedResult.toInt 
+          logger.info("Input id: " + parsedResult)
+          val res = graphDB.getURIFromOmopConceptId(ontCxn, parsedResult)
+          if (res == null) throw new RuntimeException("res is null")
+          OmopConceptIdUri(res)
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+          case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
+          case e5: RuntimeException => InternalServerError("message" -> "unknown InternalServerError")
+      }
+  }
+
+  post("/ontologies/getOmopConceptMap")
+  {
+      logger.info("Received a post request")
+      try 
+      { 
+          val res: Map[String, String] = graphDB.getOmopConceptMap(ontCxn)
+          if (res == null) throw new RuntimeException("res is null")
+          OmopConceptMap(res)
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+          case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
+          case e5: RuntimeException => InternalServerError("message" -> "unknown InternalServerError")
       }
   }
 

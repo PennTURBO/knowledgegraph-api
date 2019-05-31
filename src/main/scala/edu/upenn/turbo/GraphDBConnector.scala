@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.OpenRDFException
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -115,7 +116,7 @@ class GraphDBConnector
               resultList += result
           }
           logger.info("result size: " + resultList.size)
-          resultList.toArray
+          resultList.toSet.toArray
         } 
         catch 
         {
@@ -211,5 +212,86 @@ class GraphDBConnector
               case e: Throwable => logger.info("encountered exception", e)
               return null
           }
+      }
+
+      def getURIFromOmopConceptId(cxn: RepositoryConnection, conceptId: String): String =
+      {
+          val sparql = s"""
+
+              PREFIX turbo: <http://transformunify.org/ontologies/>
+              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+              select ?uri where
+              {
+                 graph pmbb:ontology
+                 {
+                     ?uri turbo:TURBO_0010147 $conceptId .
+                 }
+              }
+
+          """
+          try 
+          {
+              val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, sparql).evaluate()
+              var res: String = ""
+              if (tupleQueryResult.hasNext())
+              {
+                  res = tupleQueryResult.next.getValue("uri").toString
+                  if (tupleQueryResult.hasNext()) 
+                  {
+                      logger.info(s"multiple URIs found for concept ID $conceptId")
+                      return null
+                  }
+              }
+              else logger.info(s"concept ID $conceptId returned no URI results from the turbo ontology")
+              res  
+          } 
+          catch 
+          {
+              case e: RuntimeException => logger.info("exception:" + e)
+              return null
+          }
+          
+      }
+
+      def getOmopConceptMap(cxn: RepositoryConnection): Map[String,String] =
+      {
+          val sparql = s"""
+
+              PREFIX turbo: <http://transformunify.org/ontologies/>
+              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
+              select ?uri ?conceptId where
+              {
+                 graph pmbb:ontology
+                 {
+                     ?uri turbo:TURBO_0010147 ?conceptId .
+                 }
+              }
+
+          """
+          try 
+          {
+              var resMap = new HashMap[String, String]
+              val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, sparql).evaluate()
+              while (tupleQueryResult.hasNext())
+              {
+                  val nextItem = tupleQueryResult.next
+                  logger.info("retrieved next")
+                  val uri = nextItem.getValue("uri").toString
+                  logger.info("pulled uri " + uri)
+                  val conceptId = nextItem.getValue("conceptId").toString
+                  logger.info("pulled concept id " + conceptId)
+                  logger.info("processing: " + conceptId + " " + uri)
+                  resMap += conceptId -> uri
+                  logger.info("added row")
+              }
+              if (resMap.size == 0) logger.info("no concept ID mappings found in TURBO ontology")
+              resMap.toMap
+          } 
+          catch 
+          {
+              case e: RuntimeException => logger.info("exception:" + e)
+              return null
+          }
+          
       }
 }

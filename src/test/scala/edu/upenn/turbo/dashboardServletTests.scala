@@ -42,6 +42,16 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setMedRepoManager(medRepoManager)
       GraphDbConnection.setMedRepository(medRepository)
       GraphDbConnection.setMedConnection(medCxn)
+
+      val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      ontRepoManager.initialize()
+      val ontRepository = ontRepoManager.getRepository(getFromProperties("ontology_repository"))
+      val ontCxn = ontRepository.getConnection()
+
+      GraphDbConnection.setOntRepoManager(ontRepoManager)
+      GraphDbConnection.setOntRepository(ontRepository)
+      GraphDbConnection.setOntConnection(ontCxn)
   }
   override def afterAll()
   {
@@ -58,6 +68,10 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val medRepository = GraphDbConnection.getMedRepository()
       val medCxn = GraphDbConnection.getMedConnection()
 
+      val ontRepoManager = GraphDbConnection.getOntRepoManager()
+      val ontRepository = GraphDbConnection.getOntRepository()
+      val ontCxn = GraphDbConnection.getOntConnection()
+
       diagCxn.close()
       diagRepository.shutDown()
       diagRepoManager.shutDown()
@@ -65,9 +79,13 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       medCxn.close()
       medRepository.shutDown()
       medRepoManager.shutDown()
+
+      ontCxn.close()
+      ontRepository.shutDown()
+      ontRepoManager.shutDown()
   }
 
-  test("GET / on dashboardServlet should return status 200") 
+  /*test("GET / on dashboardServlet should return status 200") 
   {
     get("/") 
     {
@@ -246,6 +264,38 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("GET /medications/lastGraphUpdate")
   {
       val res = get("/medications/lastGraphUpdate")
+      {
+        status should equal (200)
+      }
+  }
+
+  test("POST /ontologies/getUriFromOmopConceptId with params")
+  {
+      val res = post("/ontologies/getUriFromOmopConceptId", "{\"searchTerm\":\"3036277\"}")
+      {
+        status should equal (200)
+      }
+  }
+  
+  test("POST /ontologies/getUriFromOmopConceptId no params")
+  {
+      val res = post("/ontologies/getUriFromOmopConceptId")
+      {
+        status should equal (400)
+      }
+  }
+  
+  test("POST /ontologies/getUriFromOmopConceptId bad params")
+  {
+      val res = post("/ontologies/getUriFromOmopConceptId", "not_a_param")
+      {
+        status should equal (400)
+      }
+  }*/
+
+  test("POST /ontologies/getOmopConceptMap")
+  {
+      val res = post("/ontologies/getOmopConceptMap")
       {
         status should equal (200)
       }

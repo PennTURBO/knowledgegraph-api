@@ -31,6 +31,10 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
       val medRepository = GraphDbConnection.getMedRepository()
       val medCxn = GraphDbConnection.getMedConnection()
 
+      val ontRepoManager = GraphDbConnection.getOntRepoManager()
+      val ontRepository = GraphDbConnection.getOntRepository()
+      val ontCxn = GraphDbConnection.getOntConnection()
+
       diagCxn.close()
       diagRepository.shutDown()
       diagRepoManager.shutDown()
@@ -38,15 +42,20 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
       medCxn.close()
       medRepository.shutDown()
       medRepoManager.shutDown()
+
+      ontCxn.close()
+      ontRepository.shutDown()
+      ontRepoManager.shutDown()
   }
 
   override def init(context: ServletContext) {
 
     //establish connections to graph databases
+    var neo4jgraph: Neo4jGraph = null
     println("connecting to neo4j...")
     try 
     {
-        val neo4jgraph = Neo4jGraph.open("neo4j.graph") 
+        neo4jgraph = Neo4jGraph.open("neo4j.graph") 
     } 
     catch 
     {
@@ -77,6 +86,16 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     GraphDbConnection.setMedRepoManager(medRepoManager)
     GraphDbConnection.setMedRepository(medRepository)
     GraphDbConnection.setMedConnection(medCxn)
+
+    val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+    ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+    ontRepoManager.initialize()
+    val ontRepository = ontRepoManager.getRepository(getFromProperties("ontology_repository"))
+    val ontCxn = ontRepository.getConnection()
+
+    GraphDbConnection.setOntRepoManager(ontRepoManager)
+    GraphDbConnection.setOntRepository(ontRepository)
+    GraphDbConnection.setOntConnection(ontCxn)
 
     println("established graph db connection")
 
