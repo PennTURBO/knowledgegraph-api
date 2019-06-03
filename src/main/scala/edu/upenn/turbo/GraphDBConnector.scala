@@ -81,7 +81,7 @@ class GraphDBConnector
         }
     }
 
-    def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[String] =
+    def getDiagnosisCodes(start: String, cxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
     {
         try 
         {
@@ -96,7 +96,7 @@ class GraphDBConnector
             PREFIX turbo: <http://transformunify.org/ontologies/>
             select distinct ?icd ?method where
             {
-                graph ?g 
+                graph ?g  
                 {
                     <$start> <http://graphBuilder.org/mapsTo> ?icd .
                 }
@@ -108,15 +108,17 @@ class GraphDBConnector
             }
           """
           val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-          val resultList: ArrayBuffer[String] = new ArrayBuffer[String]
+          val resultList: HashMap[String, ArrayBuffer[String]] = new HashMap[String, ArrayBuffer[String]]
           while (tupleQueryResult.hasNext()) 
           {
               val bindingset: BindingSet = tupleQueryResult.next()
-              var result: String = bindingset.getValue("icd").toString
-              resultList += result
+              var code: String = bindingset.getValue("icd").toString
+              var method: String = bindingset.getValue("method").toString
+              if (resultList.contains(code)) resultList(code) += method
+              else resultList += code -> ArrayBuffer(method)
           }
           logger.info("result size: " + resultList.size)
-          resultList.toSet.toArray
+          resultList
         } 
         catch 
         {
@@ -275,14 +277,9 @@ class GraphDBConnector
               while (tupleQueryResult.hasNext())
               {
                   val nextItem = tupleQueryResult.next
-                  logger.info("retrieved next")
                   val uri = nextItem.getValue("uri").toString
-                  logger.info("pulled uri " + uri)
                   val conceptId = nextItem.getValue("conceptId").toString
-                  logger.info("pulled concept id " + conceptId)
-                  logger.info("processing: " + conceptId + " " + uri)
                   resMap += conceptId -> uri
-                  logger.info("added row")
               }
               if (resMap.size == 0) logger.info("no concept ID mappings found in TURBO ontology")
               resMap.toMap

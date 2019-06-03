@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 import java.io.File
 
 import org.neo4j.graphdb._
@@ -52,7 +53,8 @@ case class OmopConceptMap(result: Map[String, String])
 case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String])
-case class DrugResults(resultsList: Map[String, Array[String]])
+case class DrugHopsResults(resultsList: Map[String, Array[String]])
+case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
@@ -114,7 +116,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
           try
           { 
-              FullNameResults(parsedResult, graphDB.getDiagnosisCodes(parsedResult, diagCxn))
+              DiagnosisCodeResult(parsedResult, graphDB.getDiagnosisCodes(parsedResult, diagCxn))
           }
           catch
           {
@@ -314,7 +316,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               g = neo4jgraph.traversal()
               logger.info("Successfully connected to property graph")
             
-              DrugResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
+              DrugHopsResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
           }
           finally
           {
