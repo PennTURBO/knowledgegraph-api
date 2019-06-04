@@ -79,22 +79,24 @@ version: 0.0.1
 				    }
     /lastGraphUpdate:
     get:
-      responses:
-        200:
-          body:
-            application/json:
-              example:
-                {
-				    "dateOfUpdate": "2018-11-27",
-				    "timeOfUpdate": "19:13:59"
-				}
-		500:
-		  body:
-		    application/json:
-		      example:
-		        {
-				    "message": "Graph file not found"
-				}
+      queryParameters:
+        None
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+				      "dateOfUpdate": "2018-11-27",
+  				      "timeOfUpdate": "19:13:59"
+    			  }
+	  	  500:
+	  	    body:
+	  	      application/json:
+		        example:
+		          {
+				      "message": "Graph file not found"
+				  }
 
 /diagnoses
 	/diagnosisTextSearch:
@@ -154,13 +156,22 @@ version: 0.0.1
                 application/json
 		          example: 
 		            {
-					    "mappedInputTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
-					    "resultsList": [
-					        "http://purl.bioontology.org/ontology/ICD9CM/199",
-					        "http://purl.bioontology.org/ontology/ICD9CM/199.1",
-					        "http://purl.bioontology.org/ontology/ICD9CM/199.0",
-					        ...
-					        ]
+					    "searchTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
+					    "resultsList": {
+					        "http://purl.bioontology.org/ontology/ICD10CM/C82.33": [
+					            "\"mondo skos:exactMatch snomed -> shared cui\""
+					        ],
+					        "http://purl.bioontology.org/ontology/ICD9CM/149.9": [
+					            "\"mondo owl:equivalentClass snomed with icd9 map\"",
+					            "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
+					            "\"mondo skos:closeMatch snomed -> shared cui\"",
+					            "\"mondo skos:closeMatch snomed with icd9 map\"",
+					            "\"mondo skos:exactMatch snomed -> shared cui\"",
+					            "\"mondo skos:exactMatch snomed with icd9 map\""
+					        ],
+					        "http://purl.bioontology.org/ontology/ICD10CM/C82.27": [
+					            "\"mondo skos:exactMatch snomed -> shared cui\""
+					        ],
 					},
 		    400:
 	     	  body:
@@ -206,3 +217,90 @@ version: 0.0.1
 			       {
 	    		     "message": "Unable to parse JSON"
 			       }
+	/getAllDiagnosisMappingPaths
+	post:
+	  queryParameters:
+	    None
+	    responses:
+          200:
+            body:
+              application/json
+                example:
+                  {
+					  "resultsList": [
+					      "\"mondo owl:equivalentClass snomed -> shared cui\"",
+			              "\"mondo owl:equivalentClass snomed with icd9 map\"",
+		       	          "\"mondo oboInOwl:hasDbXref snomed -> shared cui\"",
+					      "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
+					      "\"mondo skos:closeMatch snomed -> shared cui\"",
+					      "\"mondo skos:closeMatch snomed with icd9 map\"",
+					      "\"mondo skos:exactMatch snomed -> shared cui\"",
+					      "\"mondo skos:exactMatch snomed with icd9 map\"",
+					      "\"mondo oboInOwl:hasDbXref cui\"",
+					      "\"mondo skos:closeMatch cui\"",
+					      "\"mondo skos:exactMatch cui\"",
+					      "\"mondo oboInOwl:hasDbXref icd10\"",
+					      "\"mondo oboInOwl:hasDbXref icd9 WITHOUT range subclasses\"",
+					      "\"cui owl:equivalentClass mondo\"",
+					      "\"icd9 owl:equivalentClass mondo\"",
+					      "\"icd10 owl:equivalentClass mondo\""
+					  ]
+			       }
+/ontologies
+    /getUriFromOmopConceptId
+    post:
+      queryParameters:
+        omopIntegerId:
+          displayName:searchTerm
+          type: JSON String
+          description: OMOP concept ID
+          example: {"searchTerm":"3036277"}
+          required:true
+          responses:
+            200:
+              body:
+			    application/json:
+			      example:
+	              {
+				    "result": "http://purl.obolibrary.org/obo/IAO_0000408"
+				  }
+			400:
+	     	  body:
+			    application/json:
+			      example:
+			       {
+	    		     "message": "The input received was not a valid integer"
+			       }
+			400:
+	     	  body:
+			    application/json:
+			      example:
+			       {
+	    		     "message": "Did not receive any content in the request body"
+			       }
+    /getOmopConceptMap
+    post:
+      queryParameters:
+        None
+        response:
+          200:
+            body:
+              application/json
+                example:
+                  {
+				    "result": {
+				        "\"3036277\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000408",
+				        "\"9546\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000008",
+				        "\"3004410\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010154",
+				        "\"3012888\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000000",
+				        "\"8582\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000015",
+				        "\"3004249\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000001",
+				        "\"8840\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010153",
+				        "\"8876\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000272",
+				        "\"8554\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000187",
+				        "\"3038553\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://www.ebi.ac.uk/efo/EFO_0004340",
+				        "\"3025315\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000414",
+				        "\"9531\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000086",
+				        "\"9529\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000009"
+				      }  
+				  }

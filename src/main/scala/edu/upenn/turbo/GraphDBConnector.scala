@@ -289,6 +289,42 @@ class GraphDBConnector
               case e: RuntimeException => logger.info("exception:" + e)
               return null
           }
-          
+      }
+
+      def getDiagnosisMappingPathways(cxn: RepositoryConnection): Array[String] =
+      {
+          val query = s"""
+            PREFIX obo: <http://purl.obolibrary.org/obo/>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
+            PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
+            PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+            PREFIX turbo: <http://transformunify.org/ontologies/>
+
+            select distinct ?method where
+            {
+                ?g <http://graphBuilder.org/usedMethod> ?method .
+            }
+          """
+          try 
+          {
+              var resBuffer = new ArrayBuffer[String]
+              val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+              while (tupleQueryResult.hasNext())
+              {
+                  val nextItem = tupleQueryResult.next
+                  val method = nextItem.getValue("method").toString
+                  resBuffer += method
+              }
+              if (resBuffer.size == 0) logger.info("no concept ID mappings found in TURBO ontology")
+              resBuffer.toArray
+          } 
+          catch 
+          {
+              case e: RuntimeException => logger.info("exception:" + e)
+              return null
+          }
       }
 }

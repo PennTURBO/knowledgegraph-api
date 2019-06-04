@@ -53,6 +53,7 @@ case class OmopConceptMap(result: Map[String, String])
 case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String])
+case class DiagnosisPathways(resultsList: Array[String])
 case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
@@ -228,6 +229,20 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
+  post("/diagnoses/getAllDiagnosisMappingPaths")
+  {
+      logger.info("Received a post request")
+
+      try
+      { 
+          DiagnosisPathways(graphDB.getDiagnosisMappingPathways(diagCxn))
+      }
+      catch
+      {
+          case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
       }
   }
 

@@ -85,7 +85,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       ontRepoManager.shutDown()
   }
 
-  /*test("GET / on dashboardServlet should return status 200") 
+  test("GET / on dashboardServlet should return status 200") 
   {
     get("/") 
     {
@@ -252,6 +252,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
         status should equal (400)
       }
   }
+
+  test("POST /diagnoses/getAllDiagnosisMappingPaths")
+  {
+      val res = post("/diagnoses/getAllDiagnosisMappingPaths")
+      {
+        status should equal (200)
+      }
+  }
   
   test("POST /medications/findHopsAwayFromDrug bad params")
   {
@@ -291,7 +299,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       {
         status should equal (400)
       }
-  }*/
+  }
 
   test("POST /ontologies/getOmopConceptMap")
   {
