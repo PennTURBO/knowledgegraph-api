@@ -5,7 +5,7 @@ import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
 
-object Neo4jGraphConnection
+/*object Neo4jGraphConnection
 {
 	var neo4jgraph: Neo4jGraph = null
 
@@ -15,7 +15,7 @@ object Neo4jGraphConnection
 	}
 
 	def getGraph(): Neo4jGraph = neo4jgraph
-}
+}*/
 
 object GraphDbConnection
 {

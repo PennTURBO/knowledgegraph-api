@@ -16,10 +16,10 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   {
       super.beforeAll()
       //establish connections to graph databases
-      println("connecting to neo4j...")
+      /*println("connecting to neo4j...")
 
       val neo4jgraph = Neo4jGraph.open("neo4j.graph")
-      Neo4jGraphConnection.setGraph(neo4jgraph)
+      Neo4jGraphConnection.setGraph(neo4jgraph)*/
 
       println("connecting to graph db...")
 
@@ -57,8 +57,8 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   {
       super.afterAll()
       
-      val neo4jgraph = Neo4jGraphConnection.getGraph()
-      neo4jgraph.close()
+      /*val neo4jgraph = Neo4jGraphConnection.getGraph()
+      neo4jgraph.close()*/
 
       val diagRepoManager = GraphDbConnection.getDiagRepoManager()
       val diagRepository = GraphDbConnection.getDiagRepository()
@@ -213,7 +213,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
   
-  test("POST /medications/findHopsAwayFromDrug with params")
+  /*test("POST /medications/findHopsAwayFromDrug with params")
   {
       val res = post("/medications/findHopsAwayFromDrug", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_23888\"]}")
       {
@@ -229,6 +229,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
   
+  test("POST /medications/findHopsAwayFromDrug bad params")
+  {
+      val res = post("/medications/findHopsAwayFromDrug", "{bad_param}")
+      {
+        status should equal (400)
+      }
+  }*/
+
   test("POST /diagnoses/getDiseaseURIsFromICDCodes bad params")
   {
       val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{bad_param}")
@@ -256,22 +264,6 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("POST /diagnoses/getAllDiagnosisMappingPaths")
   {
       val res = post("/diagnoses/getAllDiagnosisMappingPaths")
-      {
-        status should equal (200)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug bad params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug", "{bad_param}")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("GET /medications/lastGraphUpdate")
-  {
-      val res = get("/medications/lastGraphUpdate")
       {
         status should equal (200)
       }

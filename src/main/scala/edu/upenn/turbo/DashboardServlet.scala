@@ -57,16 +57,18 @@ case class DiagnosisPathways(resultsList: Array[String])
 case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
+case class MedFullNameResults(searchTerm: String, resultsList: Array[String])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 {
   val graphDB: GraphDBConnector = new GraphDBConnector
-  val neo4j: Neo4jConnector = new Neo4jConnector
-  val logger = LoggerFactory.getLogger("turboAPIlogger")
-  val neo4jgraph = Neo4jGraphConnection.getGraph()
+  /*val neo4j: Neo4jConnector = new Neo4jConnector()
+  val neo4jgraph = Neo4jGraphConnection.getGraph()*/
   val diagCxn = GraphDbConnection.getDiagConnection()
   val medCxn = GraphDbConnection.getMedConnection()
   val ontCxn = GraphDbConnection.getOntConnection()
+
+  val logger = LoggerFactory.getLogger("turboAPIlogger")
 
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
@@ -142,19 +144,16 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
           logger.info("Input class: " + parsedResult)
-          var g: GraphTraversalSource = null
-          try 
-          { 
-              g = neo4jgraph.traversal()
-              logger.info("Successfully created graph traversal object")
-              FullNameResults(parsedResult, neo4j.getOrderNames(parsedResult, g))
-          }
-          finally
+
+          try
           {
-              g.close()
-              logger.info("Connections closed.")
-              println()
+              MedFullNameResults(parsedResult, graphDB.getMedicationFullNameResults(parsedResult, medCxn))
           }
+          catch
+          {
+              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
+          
       } 
       catch 
       {
@@ -291,30 +290,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  get("/medications/lastGraphUpdate")
-  {
-      try 
-      { 
-          logger.info("Checking date of last graph update")
-          val pathStr = "neo4j.graph"
-          val timeRes = Files.readAttributes(Paths.get(pathStr), classOf[BasicFileAttributes]).creationTime.toString.split("T")
-          logger.info(timeRes(0) + " " + timeRes(1))
-          val date = timeRes(0)
-          logger.info("date of update: " + date)
-          val time = timeRes(1).split("\\.")(0)
-          logger.info("time of update: " + time)
-          println()
-          GraphUpdateTime(date, time)
-      } 
-      catch 
-      {
-          case e1: NoSuchFileException => InternalServerError(Map("message" -> "Graph file not found"))
-          case e2: Throwable => InternalServerError(Map("message" -> "Unknown server error occurred"))
-      }
-      
-  }
-
-  post("/medications/findHopsAwayFromDrug")
+  /*post("/medications/findHopsAwayFromDrug")
   {
       logger.info("Received a post request")
       var parsedResult: Array[String] = null
@@ -346,5 +322,5 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }
+  }*/
 }

@@ -77,27 +77,7 @@ version: 0.0.1
 		            {
     				  "message": "Unable to parse JSON"
 				    }
-    /lastGraphUpdate:
-    get:
-      queryParameters:
-        None
-        responses:
-          200:
-            body:
-              application/json:
-                example:
-                  {
-				      "dateOfUpdate": "2018-11-27",
-  				      "timeOfUpdate": "19:13:59"
-    			  }
-	  	  500:
-	  	    body:
-	  	      application/json:
-		        example:
-		          {
-				      "message": "Graph file not found"
-				  }
-
+				    
 /diagnoses
 	/diagnosisTextSearch:
 	post:

@@ -127,6 +127,44 @@ class GraphDBConnector
         }
     }
 
+    def getMedicationFullNameResults(start: String, cxn: RepositoryConnection): Array[String] =
+    {
+        try 
+        {
+            val query = s"""
+
+            PREFIX mydata: <http://example.com/resource/>
+            select distinct ?FULL_NAME
+            where {
+               #    graph ?g1
+               {
+                   ?s mydata:inherits_from <$start>
+               }
+               graph     mydata:mdm_ods_meds_20180403_unique_cols.csv
+               {
+                   ?s  mydata:FULL_NAME ?FULL_NAME
+               }
+            }
+          """
+          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+          val resultList: ArrayBuffer[String] = new ArrayBuffer[String]
+          while (tupleQueryResult.hasNext()) 
+          {
+              val bindingset: BindingSet = tupleQueryResult.next()
+              var fullName: String = bindingset.getValue("FULL_NAME").toString
+              logger.info("scanning " + fullName)
+              resultList += fullName
+          }
+          logger.info("result size: " + resultList.size)
+          resultList.toArray
+        } 
+        catch 
+        {
+            case e: Throwable => logger.info("encountered exception", e)
+            return null
+        }
+    }
+
     def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
     {
         try 

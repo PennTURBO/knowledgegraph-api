@@ -20,8 +20,8 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
 
   override def destroy(context: ServletContext) 
   {
-      val neo4jgraph = Neo4jGraphConnection.getGraph()
-      neo4jgraph.close()
+      /*val neo4jgraph = Neo4jGraphConnection.getGraph()
+      neo4jgraph.close()*/
 
       val diagRepoManager = GraphDbConnection.getDiagRepoManager()
       val diagRepository = GraphDbConnection.getDiagRepository()
@@ -51,7 +51,7 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
   override def init(context: ServletContext) {
 
     //establish connections to graph databases
-    var neo4jgraph: Neo4jGraph = null
+    /*var neo4jgraph: Neo4jGraph = null
     println("connecting to neo4j...")
     try 
     {
@@ -63,7 +63,7 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     }
     
     println("established neo4j connection")
-    Neo4jGraphConnection.setGraph(neo4jgraph)
+    Neo4jGraphConnection.setGraph(neo4jgraph)*/
 
     println("connecting to graph db...")
 
