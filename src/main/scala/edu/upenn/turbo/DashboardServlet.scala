@@ -94,7 +94,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           }
           catch
           {
-              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
           }
       } 
       catch 
@@ -123,7 +123,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           }
           catch
           {
-              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
           }
       } 
       catch 
@@ -151,9 +151,12 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           }
           catch
           {
-              case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              case e: RuntimeException => 
+              {
+                logger.info("error:" + e)
+                InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
           }
-          
       } 
       catch 
       {
@@ -172,7 +175,15 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          val topResults = graphDB.getBestMatchTermForMedicationLookup(medCxn, parsedResult, 10)
+          var topResults: Option[ArrayBuffer[ArrayBuffer[String]]] = None
+          try
+          {
+              topResults = graphDB.getBestMatchTermForMedicationLookup(medCxn, parsedResult, 10)
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
           if (topResults == None)
           {
               val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
@@ -206,21 +217,28 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[FullNameInput]
           parsedResult = extractedResult.searchTerm
-          val topResults = graphDB.getBestMatchTermForDiagnosisLookup(diagCxn, parsedResult, 10)
-          if (topResults == None)
+          try
           {
-              val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-              NoContent(Map("message" -> noContentMessage))
-          }
-          else
-          {
-              var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
-              for (a <- topResults.get)
+              val topResults = graphDB.getBestMatchTermForDiagnosisLookup(diagCxn, parsedResult, 10)
+              if (topResults == None)
               {
-                 var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
-                 luceneResAsMaps += tempMap
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
               }
-              LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
+              else
+              {
+                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
+                  for (a <- topResults.get)
+                  {
+                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                     luceneResAsMaps += tempMap
+                  }
+                  LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
+              }
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
           }
       }
       catch 
@@ -241,7 +259,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
       catch
       {
-          case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
       }
   }
 
@@ -257,9 +275,16 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           parsedResult = extractedResult.searchTerm
           parsedResult.toInt 
           logger.info("Input id: " + parsedResult)
-          val res = graphDB.getURIFromOmopConceptId(ontCxn, parsedResult)
-          if (res == null) throw new RuntimeException("res is null")
-          OmopConceptIdUri(res)
+          try
+          {
+            val res = graphDB.getURIFromOmopConceptId(ontCxn, parsedResult)
+            if (res == null) throw new RuntimeException("res is null")
+            OmopConceptIdUri(res)
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
       } 
       catch 
       {
@@ -267,7 +292,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
           case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
-          case e5: RuntimeException => InternalServerError("message" -> "unknown InternalServerError")
       }
   }
 
@@ -276,8 +300,8 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       logger.info("Received a post request")
       try 
       { 
+
           val res: Map[String, String] = graphDB.getOmopConceptMap(ontCxn)
-          if (res == null) throw new RuntimeException("res is null")
           OmopConceptMap(res)
       } 
       catch 
@@ -286,7 +310,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
           case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
-          case e5: RuntimeException => InternalServerError("message" -> "unknown InternalServerError")
+          case e5: RuntimeException => NoContent(Map("message" -> "Unknown internal server error"))
       }
   }
 
