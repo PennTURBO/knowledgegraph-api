@@ -77,6 +77,8 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     GraphDbConnection.setDiagRepository(diagRepository)
     GraphDbConnection.setDiagConnection(diagCxn)
 
+    println("established connection to diagnoses repository")
+
     val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
     medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
     medRepoManager.initialize()
@@ -86,6 +88,8 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     GraphDbConnection.setMedRepoManager(medRepoManager)
     GraphDbConnection.setMedRepository(medRepository)
     GraphDbConnection.setMedConnection(medCxn)
+
+    println("established connection to medications repository")
 
     val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
     ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
@@ -97,7 +101,8 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     GraphDbConnection.setOntRepository(ontRepository)
     GraphDbConnection.setOntConnection(ontCxn)
 
-    println("established graph db connection")
+    println("established connection to ontologies repository")
+    println("established all graph db connections")
 
     context.mount(new DashboardServlet, "/*")
   	println("""

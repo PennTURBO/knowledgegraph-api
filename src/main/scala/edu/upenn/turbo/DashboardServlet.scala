@@ -44,9 +44,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 
-case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
-case class FullNameInput(searchTerm: String)
+case class MedFullNameInput(searchList: Array[String])
+case class MedFullNameResults(resultsMap: HashMap[String, ArrayBuffer[String]])
+case class MedicationFreeText(searchTerm: String)
+case class DiagnosisFreeText(searchTerm: String)
+case class DiagnosisTermInput(searchTerm: String)
 case class OmopConceptIdInput(searchTerm: String)
 case class OmopConceptIdUri(result: String)
 case class OmopConceptMap(result: Map[String, String])
@@ -57,7 +60,6 @@ case class DiagnosisPathways(resultsList: Array[String])
 case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
-case class MedFullNameResults(searchTerm: String, resultsList: Array[String])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 {
@@ -113,7 +115,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       { 
           val userInput = request.body
           logger.info("received: " + userInput)
-          val extractedResult = parse(userInput).extract[FullNameInput]
+          val extractedResult = parse(userInput).extract[DiagnosisTermInput]
           parsedResult = extractedResult.searchTerm
           logger.info("extracted search term")
 
@@ -137,17 +139,17 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   post("/medications/findOrderNamesFromInputURI")
   {
       logger.info("Received a post request")
-      var parsedResult: String = null
+      var parsedResult: Array[String] = null
       try 
       { 
           val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
-          parsedResult = extractedResult.searchTerm
+          val extractedResult = parse(userInput).extract[MedFullNameInput]
+          parsedResult = extractedResult.searchList
           logger.info("Input class: " + parsedResult)
 
           try
           {
-              MedFullNameResults(parsedResult, graphDB.getMedicationFullNameResults(parsedResult, medCxn))
+              MedFullNameResults(graphDB.getMedicationFullNameResults(parsedResult, medCxn))
           }
           catch
           {
@@ -173,7 +175,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       try 
       { 
           val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
+          val extractedResult = parse(userInput).extract[MedicationFreeText]
           parsedResult = extractedResult.searchTerm
           var topResults: Option[ArrayBuffer[ArrayBuffer[String]]] = None
           try
@@ -215,7 +217,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       try 
       { 
           val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
+          val extractedResult = parse(userInput).extract[DiagnosisFreeText]
           parsedResult = extractedResult.searchTerm
           try
           {
