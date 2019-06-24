@@ -21,6 +21,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
+import org.eclipse.rdf4j.query.QueryEvaluationException
+
 import java.nio.file.Path
 import java.nio.file.Paths
 import org.slf4j.LoggerFactory
@@ -126,6 +128,7 @@ class GraphDBConnector
            {
                ?s  mydata:FULL_NAME ?fullName
            }
+           FILTER (!REGEX(STR(?fullName), "\u001a"))
         }
       """
       val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
@@ -138,6 +141,7 @@ class GraphDBConnector
           if (resultMap.contains(start)) resultMap(start) += fullName
           else resultMap += start -> ArrayBuffer(fullName)
       }
+
       logger.info("result size: " + resultMap.size)
       resultMap
     }
