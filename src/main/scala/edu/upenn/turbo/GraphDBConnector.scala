@@ -261,7 +261,9 @@ class GraphDBConnector
                  graph pmbb:ontology
                  {
                      ?uri turbo:TURBO_0010147 ?conceptId .
+                     filter (?conceptId != 0)
                  }
+
               }
 
           """
