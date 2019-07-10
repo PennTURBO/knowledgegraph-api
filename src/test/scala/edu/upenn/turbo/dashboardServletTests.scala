@@ -159,7 +159,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   
   test("POST /medications/findOrderNamesFromInputURI with params")
   {
-      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/CHEBI_6942\"}")
+      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_6942\"]}")
       {
         status should equal (200)
       }

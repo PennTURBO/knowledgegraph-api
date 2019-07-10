@@ -21,6 +21,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
+import org.eclipse.rdf4j.query.QueryEvaluationException
+
 import java.nio.file.Path
 import java.nio.file.Paths
 import org.slf4j.LoggerFactory
@@ -111,34 +113,37 @@ class GraphDBConnector
       resultList 
     }
 
-    def getMedicationFullNameResults(start: String, cxn: RepositoryConnection): Array[String] =
+    def getMedicationFullNameResults(startList: Array[String], cxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
     {
+        var startListAsString = ""
+        for (med <- startList) startListAsString += " <" + med + "> "
         val query = s"""
 
         PREFIX mydata: <http://example.com/resource/>
-        select distinct ?FULL_NAME
+        select distinct ?start ?fullName
         where {
-           #    graph ?g1
-           {
-               ?s mydata:inherits_from <$start>
-           }
+           values ?start {$startListAsString}
+           ?s mydata:inherits_from ?start .
            graph     mydata:mdm_ods_meds_20180403_unique_cols.csv
            {
-               ?s  mydata:FULL_NAME ?FULL_NAME
+               ?s  mydata:FULL_NAME ?fullName
            }
+           FILTER (!REGEX(STR(?fullName), "\u001a"))
         }
       """
       val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      val resultList: ArrayBuffer[String] = new ArrayBuffer[String]
+      val resultMap = new HashMap[String, ArrayBuffer[String]]
       while (tupleQueryResult.hasNext()) 
       {
           val bindingset: BindingSet = tupleQueryResult.next()
-          var fullName: String = bindingset.getValue("FULL_NAME").toString
-          resultList += fullName
-          logger.info("scanning: " + fullName)
+          var fullName: String = bindingset.getValue("fullName").toString
+          var start: String = bindingset.getValue("start").toString
+          if (resultMap.contains(start)) resultMap(start) += fullName
+          else resultMap += start -> ArrayBuffer(fullName)
       }
-      logger.info("result size: " + resultList.size)
-      resultList.toArray 
+
+      logger.info("result size: " + resultMap.size)
+      resultMap
     }
 
     def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
@@ -256,7 +261,9 @@ class GraphDBConnector
                  graph <https://raw.githubusercontent.com/PennTURBO/Turbo-Ontology/master/ontologies/turbo_merged.owl>
                  {
                      ?uri turbo:TURBO_0010147 ?conceptId .
+                     filter (?conceptId != 0)
                  }
+
               }
 
           """
