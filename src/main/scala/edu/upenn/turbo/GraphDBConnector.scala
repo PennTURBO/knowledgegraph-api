@@ -222,7 +222,7 @@ class GraphDBConnector
               PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
               select ?uri where
               {
-                 graph pmbb:ontology
+                 graph <https://raw.githubusercontent.com/PennTURBO/Turbo-Ontology/master/ontologies/turbo_merged.owl>
                  {
                      ?uri turbo:TURBO_0010147 $conceptId .
                  }
@@ -253,7 +253,7 @@ class GraphDBConnector
               PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
               select ?uri ?conceptId where
               {
-                 graph pmbb:ontology
+                 graph <https://raw.githubusercontent.com/PennTURBO/Turbo-Ontology/master/ontologies/turbo_merged.owl>
                  {
                      ?uri turbo:TURBO_0010147 ?conceptId .
                  }
