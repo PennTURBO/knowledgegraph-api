@@ -2,13 +2,41 @@
 
 REST API for communication between various TURBO components
 
+## Installation ##
+Turbo-API is a Scala project that can either be run locally through SBT (Scala Build Tool), or run in a docker container.
+
+### Local ###
+- SBT 
+	- Minimum version is 1.1.4
+		- [Official SBT Setup Guide](https://www.scala-sbt.org/release/docs/Setup.html)
+
+### Docker ###
+- Docker
+    - Most recent stable release, minimum version is 17.06.0
+      - [Official Docker Website Getting Started](https://docs.docker.com/engine/getstarted/step_one/)
+      - [Official Docker Installation for Windows](https://docs.docker.com/docker-for-windows/install/)
+
+### Configuration ###
+Copy `turboAPI.properties.template` to `turboAPI.properties`
+
+
 ## Build & Run ##
 
+### Local Start ###
 ```sh
-$ cd Dashboard
+$ cd Turbo-API
 $ sbt
 > jetty:start
 ```
+
+### Docker Start ###
+```
+docker-compose up
+```
+
+This runs `sbt ~"jetty:start"` in the context of a docker container.  May take several minutes to compile.
+
+### General Use ###
 
 For free text lookup, send POST JSON to "http://localhost:8080/medications/findOrderNamesFromInputString"
 
@@ -23,3 +51,6 @@ For URI lookup, send POST JSON to "http://localhost:8080/medications/findOrderNa
 Note that when running from SBT the default port is 8080, as a precompiled .jar the default port is 8089.
 
 See dashboardApiDocs.raml for more explicit documentation.
+
+
+
