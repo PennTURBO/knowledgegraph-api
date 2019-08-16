@@ -1,0 +1,6 @@
+serviceURL = http://turbo-prd-db01.pmacs.upenn.edu:7200/
+medications_repository = med_map_support_20180403_boosted_20190426
+diagnoses_repository = Hayden_diseaseToDiagnosis
+ontology_repository = Haydens_graph_model
+username = hfree
+password = ObibIsTheBest
