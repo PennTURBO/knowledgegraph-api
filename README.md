@@ -5,19 +5,20 @@ REST API for communication between various TURBO components
 ## Installation ##
 Turbo-API is a Scala project that can either be run locally through SBT (Scala Build Tool), or run in a docker container.
 
-### Local ###
+### Requirements ###
+#### Local
 - SBT 
 	- Minimum version is 1.1.4
 		- [Official SBT Setup Guide](https://www.scala-sbt.org/release/docs/Setup.html)
 
-### Docker ###
+#### Docker
 - Docker
     - Most recent stable release, minimum version is 17.06.0
       - [Official Docker Website Getting Started](https://docs.docker.com/engine/getstarted/step_one/)
       - [Official Docker Installation for Windows](https://docs.docker.com/docker-for-windows/install/)
 
 ### Configuration ###
-Copy `turboAPI.properties.template` to `turboAPI.properties`
+Copy `turboAPI.properties.template` to `turboAPI.properties`.  Update passwords as necessary.
 
 
 ## Build & Run ##
