@@ -68,6 +68,7 @@ resolvers += Classpaths.typesafeReleases
 libraryDependencies ++= Seq(
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
+  "org.pegdown" % "pegdown" % "1.6.0" % Test, // for html reports, see <https://stackoverflow.com/questions/37056570/how-to-generate-html-reports-on-play-scalatest>
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "org.eclipse.jetty" % "jetty-webapp" % "9.4.9.v20180320" % "container;compile",
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
@@ -91,3 +92,4 @@ libraryDependencies ++= Seq(
 enablePlugins(SbtTwirl)
 enablePlugins(ScalatraPlugin)
 
+testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports/html")
