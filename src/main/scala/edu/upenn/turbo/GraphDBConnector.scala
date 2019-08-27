@@ -75,6 +75,64 @@ class GraphDBConnector
         resultList.toArray
     }
 
+    def getSemanticContextForDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
+    {
+        var startListAsString = ""
+        for (code <- startingCodes) startListAsString += " <" + code + "> "
+        logger.info("launching query to Graph DB")
+
+        val query = s"""
+        PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX : <http://purl.obolibrary.org/obo/mondo.owl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        CONSTRUCT {
+            ?target rdf:subClassOf ?sub1 .
+            ?sub1 rdf:subClassOf ?sub2 .
+            #?target <http://heath/example/option> True .
+            ?target <http://graphBuilder.org/mapsTo> ?code .
+            ?code skos:prefLabel ?codeLabel .
+            ?code skos:notation ?notation .
+            ?target rdfs:label ?targetLabel .
+            ?sub1 rdfs:label ?sub1Label .
+            ?sub2 rdfs:label ?sub2Label .
+        }
+        WHERE {
+            values ?target {$startListAsString}
+            {
+                ?target <http://graphBuilder.org/mapsTo> ?code .
+                ?code skos:prefLabel ?codeLabel .
+                ?code skos:notation ?notation 
+            } 
+            {
+                ?target rdf:subClassOf ?sub1 .
+                ?target rdfs:label ?targetLabel .
+                ?sub1 rdfs:label ?sub1Label .
+                OPTIONAL {
+                    ?sub1 rdf:subClassOf ?sub2 .
+                    ?sub2 rdfs:label ?sub2Label .
+                }
+            }
+        }
+        """
+
+        val queryResult = cxn.prepareQuery(QueryLanguage.SPARQL, query).evaluate()
+        
+        val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
+        while (tupleQueryResult.hasNext()) 
+        {
+            val bindingset: BindingSet = tupleQueryResult.next()
+            var icdSub: String = bindingset.getValue("icd").toString
+            var mondoSub: String = bindingset.getValue("mondo").toString
+            var mondoLabel: String = bindingset.getValue("mlabel").toString
+            var method: String = bindingset.getValue("method").toString
+            //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
+            resultList += Array(icdSub, mondoSub, mondoLabel, method)
+        }
+        logger.info("result size: " + resultList.size)
+        resultList.toArray
+    }
+
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
     {
         val query = s"""

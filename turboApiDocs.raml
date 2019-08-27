@@ -1,253 +1,285 @@
 #%RAML 1.0
 ---
 title: TURBO API
-baseURI: turbo-dev-app01.pmacs.upenn.edu:8089/
+baseUri: turbo-dev-app01.pmacs.upenn.edu:8089/
 version: 0.0.1
+mediaType: application/json
 
 /medications:
-	/findOrderNamesFromInputURI:
-    post: 
-	  queryParameters:
-	    URISearchTerm: 
-	      displayName: searchList
-	      type: JSON List
-	      description: list of CHEBI or RxNorm URIs representing a drug role, drug generic name, or drug brand name
-	      example: {"searchList":["http://purl.obolibrary.org/obo/CHEBI_71940","http://purl.obolibrary.org/obo/CHEBI_6942"]}
-	      required: true
-	      responses:
-	        200:
-	          body:
-	            application/json:
-	              example:
-	                {
-					    "resultsMap": {
-					        "http://purl.obolibrary.org/obo/CHEBI_6942": [
-					            "\"MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
-					            "\"MINOXIDIL 2 % EX SOLN\"",
-					            "\"PX MINOXIDIL FOR WOMEN EX\"",
-					            "\"PX MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
-					            "\"PX MINOXIDIL FOR MEN EX\"",
-					            ...
-					            ],
-					        "http://purl.obolibrary.org/obo/CHEBI_71940": [
-					            "\"tadalafil 20 mg oral tablet 2 tabs QD\"",
-					            "\"Adcirca 20 mg oral tablet\"",
-					            "\"Cialis\"",
-					            ...
-					            ]
-					    }
-					}
-			400: 
-			  body:
-			    application/json:
-	              example:
-		            {
-    				  "message": "Unable to parse JSON"
-				    }
-				    
-/diagnoses
+  /findOrderNamesFromInputURI:
+    post:
+      queryParameters:
+        displayName: searchList
+        type: JSON List
+        description: list of CHEBI or RxNorm URIs representing a drug role, drug generic name, or drug brand name
+        example: {"searchList":["http://purl.obolibrary.org/obo/CHEBI_71940","http://purl.obolibrary.org/obo/CHEBI_6942"]}
+        required: true
+      responses:
+        200:
+          body:
+  				application/json:
+              example: |
+    						{
+    							"resultsMap": {
+    								"http://purl.obolibrary.org/obo/CHEBI_6942": [
+    									"\"MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
+    									"\"MINOXIDIL 2 % EX SOLN\"",
+    									"\"PX MINOXIDIL FOR WOMEN EX\"",
+    									"\"PX MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
+    									"\"PX MINOXIDIL FOR MEN EX\"",
+    									...
+    									],
+    								"http://purl.obolibrary.org/obo/CHEBI_71940": [
+    									"\"tadalafil 20 mg oral tablet 2 tabs QD\"",
+    									"\"Adcirca 20 mg oral tablet\"",
+    									"\"Cialis\"",
+    									...
+    									]
+    							}
+    						}
+				400:
+				  body:
+					application/json:
+					  example:
+						{
+						  "message": "Unable to parse JSON"
+						}
+
+/diagnoses:
 	/diagnosisTextSearch:
 	post:
-      queryParameters:
-	    freeTextSearchTerm:
+	  queryParameters:
+		freeTextSearchTerm:
 		  displayName: searchTerm
 		  type: JSON String
 		  description: free text input to be mapped to a set of potentially matching ontology disease terms
 		  example: {"searchTerm":"diabetes"}
 		  required: true
 		  repsonses:
-		    200:
-		      body:
-		        application/json
-		          example:
-		            {
-				      "searchTerm": "diabetes",
-				      "searchResults": [
-				          {
-				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
-				            "label": "gestational diabetes"
-				          },
-				          {
-				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005015",
-				            "label": "diabetes mellitus (disease)"
-				          },
-				          {
-				            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005827",
-				            "label": "lipoatrophic diabetes"
-				          },
-  						...
-				    	]
-				    },
-		    204:
+			200:
+			  body:
+				application/json
+				  example:
+					{
+					  "searchTerm": "diabetes",
+					  "searchResults": [
+						  {
+							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
+							"label": "gestational diabetes"
+						  },
+						  {
+							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005015",
+							"label": "diabetes mellitus (disease)"
+						  },
+						  {
+							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005827",
+							"label": "lipoatrophic diabetes"
+						  },
+						...
+						]
+					},
+			204:
 			  header:
-			    message:Your input of "notADisease" returned no matches.
+				message:Your input of "notADisease" returned no matches.
 			400:
 			  body:
 				application/json:
 				  example:
-				    {
-    				  "message": "Unable to parse JSON"
-				    }
-    /getICDCodesFromDiseaseURI
+					{
+					  "message": "Unable to parse JSON"
+					}
+	/getICDCodesFromDiseaseURI:
+	post:
+	  queryParameters:
+		URISearchTerm:
+		  displayName: searchTerm
+		  type: JSON String
+		  description: MONDO URI representing a disease
+		  example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992"}
+		  required: true
+		  responses:
+			200:
+			  body:
+				application/json
+				  example:
+					{
+						"searchTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
+						"resultsList": {
+							"http://purl.bioontology.org/ontology/ICD10CM/C82.33": [
+								"\"mondo skos:exactMatch snomed -> shared cui\""
+							],
+							"http://purl.bioontology.org/ontology/ICD9CM/149.9": [
+								"\"mondo owl:equivalentClass snomed with icd9 map\"",
+								"\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
+								"\"mondo skos:closeMatch snomed -> shared cui\"",
+								"\"mondo skos:closeMatch snomed with icd9 map\"",
+								"\"mondo skos:exactMatch snomed -> shared cui\"",
+								"\"mondo skos:exactMatch snomed with icd9 map\""
+							],
+							"http://purl.bioontology.org/ontology/ICD10CM/C82.27": [
+								"\"mondo skos:exactMatch snomed -> shared cui\""
+							],
+					},
+			400:
+			  body:
+				application/json:
+				  example:
+				   {
+					 "message": "Unable to parse JSON"
+				   }
+	/getDiseaseURIsFromICDCodes:
+	post:
+	  queryParameters:
+		ICDCodeList:
+		  displayName: searchList
+		  type: JSON String Array
+		  description: List of ICD9 or ICD10 codes (can mix and match)
+		  example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"]}
+		  required: true
+		  responses:
+			200:
+			  body:
+				application/json
+				  example:
+					{
+						"mappedInputTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
+						{
+						"resultsList": [
+							[
+								"http://purl.bioontology.org/ontology/ICD9CM/759.89",
+								"http://purl.obolibrary.org/obo/MONDO_0007534",
+								"\"Beckwith-Wiedemann syndrome\""
+							],
+							[
+								"http://purl.bioontology.org/ontology/ICD9CM/759.89",
+								"http://purl.obolibrary.org/obo/MONDO_0016006",
+								"\"Cockayne syndrome\""
+							],...
+						}
+					},
+			400:
+			  body:
+				application/json:
+				  example:
+				   {
+					 "message": "Unable to parse JSON"
+				   }
+	/getSemanticContextForDiseaseURIs:
     post:
+      description: context for a list of disease iri values
       queryParameters:
-        URISearchTerm:
-          displayName: searchTerm
-          type: JSON String
-          description: MONDO URI representing a disease
-          example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992"}
-          required: true
-          responses:
-            200:
-              body:
-                application/json
-		          example: 
-		            {
-					    "searchTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
-					    "resultsList": {
-					        "http://purl.bioontology.org/ontology/ICD10CM/C82.33": [
-					            "\"mondo skos:exactMatch snomed -> shared cui\""
-					        ],
-					        "http://purl.bioontology.org/ontology/ICD9CM/149.9": [
-					            "\"mondo owl:equivalentClass snomed with icd9 map\"",
-					            "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
-					            "\"mondo skos:closeMatch snomed -> shared cui\"",
-					            "\"mondo skos:closeMatch snomed with icd9 map\"",
-					            "\"mondo skos:exactMatch snomed -> shared cui\"",
-					            "\"mondo skos:exactMatch snomed with icd9 map\""
-					        ],
-					        "http://purl.bioontology.org/ontology/ICD10CM/C82.27": [
-					            "\"mondo skos:exactMatch snomed -> shared cui\""
-					        ],
-					},
-		    400:
-	     	  body:
-			    application/json:
-			      example:
-			       {
-	    		     "message": "Unable to parse JSON"
-			       }
-	/getDiseaseURIsFromICDCodes
+		  displayName: searchList
+		  type: JSON String Array
+		  description: List of MONDO URI representing diseases
+		  example: {"searchList":["http://purl.obolibrary.org/obo/MONDO_0005002","http://purl.obolibrary.org/obo/MONDO_0011751"]}
+		  required: true
+      responses:
+        200:
+          body:
+            example: |
+              {
+                "http://purl.bioontology.org/ontology/ICD10CM/D76.3" : {
+                  "http://www.w3.org/2004/02/skos/core#notation" : [
+                    {
+                      "value" : "D76.3",
+                      "type" : "literal",
+                      "datatype" : "http://www.w3.org/2001/XMLSchema#string"
+                    }
+                  ],
+                  "http://www.w3.org/2004/02/skos/core#prefLabel" : [
+                    {
+                      "value" : "Other histiocytosis syndromes",
+                      "type" : "literal",
+                      "lang" : "en"
+                    }
+                  ]
+                },
+                ...
+              }
+	/getAllDiagnosisMappingPaths:
 	post:
 	  queryParameters:
-        ICDCodeList:
-          displayName: searchList
-          type: JSON String Array
-          description: List of ICD9 or ICD10 codes (can mix and match)
-          example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"]}
-          required: true
-          responses:
-            200:
-              body:
-                application/json
-		          example: 
-		            {
-					    "mappedInputTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
-					    {
-					    "resultsList": [
-					        [
-					            "http://purl.bioontology.org/ontology/ICD9CM/759.89",
-					            "http://purl.obolibrary.org/obo/MONDO_0007534",
-					            "\"Beckwith-Wiedemann syndrome\""
-					        ],
-					        [
-					            "http://purl.bioontology.org/ontology/ICD9CM/759.89",
-					            "http://purl.obolibrary.org/obo/MONDO_0016006",
-					            "\"Cockayne syndrome\""
-					        ],...
-					    }
-					},
-		    400:
-	     	  body:
-			    application/json:
-			      example:
-			       {
-	    		     "message": "Unable to parse JSON"
-			       }
-	/getAllDiagnosisMappingPaths
-	post:
-	  queryParameters:
-	    None
-	    responses:
-          200:
-            body:
-              application/json
-                example:
-                  {
+		None
+		responses:
+		  200:
+			body:
+			  application/json
+				example:
+				  {
 					  "resultsList": [
-					      "\"mondo owl:equivalentClass snomed -> shared cui\"",
-			              "\"mondo owl:equivalentClass snomed with icd9 map\"",
-		       	          "\"mondo oboInOwl:hasDbXref snomed -> shared cui\"",
-					      "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
-					      "\"mondo skos:closeMatch snomed -> shared cui\"",
-					      "\"mondo skos:closeMatch snomed with icd9 map\"",
-					      "\"mondo skos:exactMatch snomed -> shared cui\"",
-					      "\"mondo skos:exactMatch snomed with icd9 map\"",
-					      "\"mondo oboInOwl:hasDbXref cui\"",
-					      "\"mondo skos:closeMatch cui\"",
-					      "\"mondo skos:exactMatch cui\"",
-					      "\"mondo oboInOwl:hasDbXref icd10\"",
-					      "\"mondo oboInOwl:hasDbXref icd9 WITHOUT range subclasses\"",
-					      "\"cui owl:equivalentClass mondo\"",
-					      "\"icd9 owl:equivalentClass mondo\"",
-					      "\"icd10 owl:equivalentClass mondo\""
+						  "\"mondo owl:equivalentClass snomed -> shared cui\"",
+						  "\"mondo owl:equivalentClass snomed with icd9 map\"",
+						  "\"mondo oboInOwl:hasDbXref snomed -> shared cui\"",
+						  "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
+						  "\"mondo skos:closeMatch snomed -> shared cui\"",
+						  "\"mondo skos:closeMatch snomed with icd9 map\"",
+						  "\"mondo skos:exactMatch snomed -> shared cui\"",
+						  "\"mondo skos:exactMatch snomed with icd9 map\"",
+						  "\"mondo oboInOwl:hasDbXref cui\"",
+						  "\"mondo skos:closeMatch cui\"",
+						  "\"mondo skos:exactMatch cui\"",
+						  "\"mondo oboInOwl:hasDbXref icd10\"",
+						  "\"mondo oboInOwl:hasDbXref icd9 WITHOUT range subclasses\"",
+						  "\"cui owl:equivalentClass mondo\"",
+						  "\"icd9 owl:equivalentClass mondo\"",
+						  "\"icd10 owl:equivalentClass mondo\""
 					  ]
-			       }
-/ontologies
-    /getUriFromOmopConceptId
-    post:
-      queryParameters:
-        omopIntegerId:
-          displayName:searchTerm
-          type: JSON String
-          description: OMOP concept ID
-          example: {"searchTerm":"3036277"}
-          required:true
-          responses:
-            200:
-              body:
-			    application/json:
-			      example:
-	              {
-				    "result": "http://purl.obolibrary.org/obo/IAO_0000408"
+				   }
+/ontologies:
+	/getUriFromOmopConceptId:
+	post:
+	  queryParameters:
+		omopIntegerId:
+		  displayName:searchTerm
+		  type: JSON String
+		  description: OMOP concept ID
+		  example: {"searchTerm":"3036277"}
+		  required:true
+		  responses:
+			200:
+			  body:
+				application/json:
+				  example:
+				  {
+					"result": "http://purl.obolibrary.org/obo/IAO_0000408"
 				  }
 			400:
-	     	  body:
-			    application/json:
-			      example:
-			       {
-	    		     "message": "The input received was not a valid integer"
-			       }
+			  body:
+				application/json:
+				  example:
+				   {
+					 "message": "The input received was not a valid integer"
+				   }
 			400:
-	     	  body:
-			    application/json:
-			      example:
-			       {
-	    		     "message": "Did not receive any content in the request body"
-			       }
-    /getOmopConceptMap
-    post:
-      queryParameters:
-        None
-        response:
-          200:
-            body:
-              application/json
-                example:
-                  {
-				    "result": {
-				        "\"3036277\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000408",
-				        "\"9546\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000008",
-				        "\"3004410\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010154",
-				        "\"3012888\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000000",
-				        "\"8582\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000015",
-				        "\"3004249\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000001",
-				        "\"8840\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010153",
-				        "\"8876\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000272",
-				        "\"8554\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000187",
-				        "\"3038553\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://www.ebi.ac.uk/efo/EFO_0004340",
-				        "\"3025315\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000414",
-				        "\"9531\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000086",
-				        "\"9529\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000009"
-				      }  
+			  body:
+				application/json:
+				  example:
+				   {
+					 "message": "Did not receive any content in the request body"
+				   }
+	/getOmopConceptMap:
+	post:
+	  queryParameters:
+		None
+		response:
+		  200:
+			body:
+			  application/json
+				example:
+				  {
+					"result": {
+						"\"3036277\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000408",
+						"\"9546\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000008",
+						"\"3004410\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010154",
+						"\"3012888\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000000",
+						"\"8582\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000015",
+						"\"3004249\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000001",
+						"\"8840\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010153",
+						"\"8876\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000272",
+						"\"8554\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000187",
+						"\"3038553\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://www.ebi.ac.uk/efo/EFO_0004340",
+						"\"3025315\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000414",
+						"\"9531\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000086",
+						"\"9529\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000009"
+					  }
 				  }

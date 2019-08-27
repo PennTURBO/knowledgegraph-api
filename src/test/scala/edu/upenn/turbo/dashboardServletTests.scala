@@ -156,6 +156,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
         status should equal (204)
       }
   }
+
+  test("POST /diagnoses/getSemanticContextForDiseaseURIs with params")
+  {
+      val res = post("/diagnoses/getSemanticContextForDiseaseURIs", "{\"searchList\":[\"http://purl.obolibrary.org/obo/MONDO_0005002\",\"http://purl.obolibrary.org/obo/MONDO_0011751\"]}")
+      {
+        status should equal (200)
+      }
+  }
   
   test("POST /medications/findOrderNamesFromInputURI with params")
   {
