@@ -166,7 +166,7 @@ mediaType: application/json
 				   }
 	/getSemanticContextForDiseaseURIs:
     post:
-      description: context for a list of disease iri values
+      description: get graph context for a list of disease iri values.  Returns a list of triples.
       queryParameters:
 		  displayName: searchList
 		  type: JSON String Array
@@ -177,23 +177,33 @@ mediaType: application/json
         200:
           body:
             example: |
-              {
-                "http://purl.bioontology.org/ontology/ICD10CM/D76.3" : {
-                  "http://www.w3.org/2004/02/skos/core#notation" : [
-                    {
-                      "value" : "D76.3",
-                      "type" : "literal",
-                      "datatype" : "http://www.w3.org/2001/XMLSchema#string"
-                    }
-                  ],
-                  "http://www.w3.org/2004/02/skos/core#prefLabel" : [
-                    {
-                      "value" : "Other histiocytosis syndromes",
-                      "type" : "literal",
-                      "lang" : "en"
-                    }
-                  ]
-                },
+			{
+			    "resultsList": [
+			        [
+			            "http://purl.obolibrary.org/obo/MONDO_0005002",
+			            "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+			            "http://purl.obolibrary.org/obo/MONDO_0002567"
+			        ],
+			        [
+			            "http://purl.obolibrary.org/obo/MONDO_0002567",
+			            "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+			            "http://purl.obolibrary.org/obo/MONDO_0000270"
+			        ],
+			        [
+			            "http://purl.obolibrary.org/obo/MONDO_0005002",
+			            "http://graphBuilder.org/mapsTo",
+			            "http://purl.bioontology.org/ontology/ICD9CM/491.21"
+			        ],
+			        [
+			            "http://purl.bioontology.org/ontology/ICD9CM/491.21",
+			            "http://www.w3.org/2004/02/skos/core#prefLabel",
+			            "\"Obstructive chronic bronchitis with (acute) exacerbation\"@en"
+			        ],
+			        [
+			            "http://purl.bioontology.org/ontology/ICD9CM/491.21",
+			            "http://www.w3.org/2004/02/skos/core#notation",
+			            "\"491.21\""
+			        ],
                 ...
               }
 	/getAllDiagnosisMappingPaths:

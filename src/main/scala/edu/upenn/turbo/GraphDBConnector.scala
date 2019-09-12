@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.OpenRDFException
+import org.eclipse.rdf4j.model.Statement
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -116,20 +117,20 @@ class GraphDBConnector
         }
         """
 
-        val queryResult = cxn.prepareQuery(QueryLanguage.SPARQL, query).evaluate()
+        val queryResult = cxn.prepareGraphQuery(query).evaluate()
         
         val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
-        while (tupleQueryResult.hasNext()) 
+        while (queryResult.hasNext()) 
         {
-            val bindingset: BindingSet = tupleQueryResult.next()
-            var icdSub: String = bindingset.getValue("icd").toString
-            var mondoSub: String = bindingset.getValue("mondo").toString
-            var mondoLabel: String = bindingset.getValue("mlabel").toString
-            var method: String = bindingset.getValue("method").toString
-            //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
-            resultList += Array(icdSub, mondoSub, mondoLabel, method)
+            val statement: Statement = queryResult.next()
+            val subject: String = statement.getSubject().toString()
+            val predicate: String = statement.getPredicate().toString()
+            val obj: String = statement.getObject().toString()
+
+            resultList += Array(subject, predicate, obj)
         }
         logger.info("result size: " + resultList.size)
+        logger.info("result: " + resultList)
         resultList.toArray
     }
 
