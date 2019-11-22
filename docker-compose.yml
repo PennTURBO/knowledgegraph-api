@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - "./:/appsrc"
+    working_dir: /appsrc
+    command: bash -c 'sbt ~"jetty:start"'
+    tty: true
+    stdin_open: true
+
+    ports:
+      - "8080:8080"
