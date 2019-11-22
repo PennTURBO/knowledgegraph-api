@@ -86,7 +86,7 @@ class GraphDBConnector
         PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
         PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
         PREFIX turbo: <http://transformunify.org/ontologies/>
-        select distinct ?icd ?method where
+        select distinct ?icd ?method ?mlabel ?code ?icdGraph where
         {
             graph ?g  
             {
@@ -95,6 +95,10 @@ class GraphDBConnector
             graph obo:mondo.owl
             {
                 <$start> rdfs:label ?mlabel .
+            }
+            graph ?icdGraph
+            {
+                ?icd skos:notation ?code .
             }
             ?g <http://graphBuilder.org/usedMethod> ?method .
         }
