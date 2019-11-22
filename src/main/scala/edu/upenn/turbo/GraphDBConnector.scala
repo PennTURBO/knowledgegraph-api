@@ -145,7 +145,7 @@ class GraphDBConnector
         PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
         PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
         PREFIX turbo: <http://transformunify.org/ontologies/>
-        select distinct ?icd ?method ?mlabel ?code ?icdGraph where
+        select distinct ?icdAsString ?method ?icd where
         {
             graph ?g  
             {
@@ -157,9 +157,12 @@ class GraphDBConnector
             }
             graph ?icdGraph
             {
-                ?icd skos:notation ?code .
+                ?icd skos:notation ?codeSuffix .
+                ?icd skos:prefLabel ?codeLabel .
             }
             ?g <http://graphBuilder.org/usedMethod> ?method .
+            BIND(IF (str(?icdGraph) = "http://data.bioontology.org/ontologies/ICD9CM/", "ICD9", "ICD10") as ?icdGraphAsString)
+            BIND(CONCAT(str(?icdGraphAsString), " ", str(?codeSuffix), " ", str(?codeLabel)) AS ?icdAsString)
         }
       """
       val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
@@ -167,10 +170,11 @@ class GraphDBConnector
       while (tupleQueryResult.hasNext()) 
       {
           val bindingset: BindingSet = tupleQueryResult.next()
-          var code: String = bindingset.getValue("icd").toString
-          var method: String = bindingset.getValue("method").toString
-          if (resultList.contains(code)) resultList(code) += method
-          else resultList += code -> ArrayBuffer(method)
+          var codeAsString: String = bindingset.getValue("icdAsString").toString.replaceAll("\"","")
+          var method: String = bindingset.getValue("method").toString.replaceAll("\"","")
+          var code: String = bindingset.getValue("icdAsString").toString
+          if (resultList.contains(codeAsString)) resultList(codeAsString) += method
+          else resultList += codeAsString -> ArrayBuffer(method)
       }
       logger.info("result size: " + resultList.size)
       resultList 
@@ -365,7 +369,7 @@ class GraphDBConnector
           while (tupleQueryResult.hasNext())
           {
               val nextItem = tupleQueryResult.next
-              val method = nextItem.getValue("method").toString
+              val method = nextItem.getValue("method").toString.replaceAll("\"","")
               resBuffer += method
           }
           if (resBuffer.size == 0) logger.info("no concept ID mappings found in TURBO ontology")
