@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.repository.Repository
 import org.eclipse.rdf4j.OpenRDFException
+import org.eclipse.rdf4j.model.Statement
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -75,6 +76,64 @@ class GraphDBConnector
         resultList.toArray
     }
 
+    def getSemanticContextForDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
+    {
+        var startListAsString = ""
+        for (code <- startingCodes) startListAsString += " <" + code + "> "
+        logger.info("launching query to Graph DB")
+
+        val query = s"""
+        PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX : <http://purl.obolibrary.org/obo/mondo.owl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        CONSTRUCT {
+            ?target rdf:subClassOf ?sub1 .
+            ?sub1 rdf:subClassOf ?sub2 .
+            #?target <http://heath/example/option> True .
+            ?target <http://graphBuilder.org/mapsTo> ?code .
+            ?code skos:prefLabel ?codeLabel .
+            ?code skos:notation ?notation .
+            ?target rdfs:label ?targetLabel .
+            ?sub1 rdfs:label ?sub1Label .
+            ?sub2 rdfs:label ?sub2Label .
+        }
+        WHERE {
+            values ?target {$startListAsString}
+            {
+                ?target <http://graphBuilder.org/mapsTo> ?code .
+                ?code skos:prefLabel ?codeLabel .
+                ?code skos:notation ?notation 
+            } 
+            {
+                ?target rdf:subClassOf ?sub1 .
+                ?target rdfs:label ?targetLabel .
+                ?sub1 rdfs:label ?sub1Label .
+                OPTIONAL {
+                    ?sub1 rdf:subClassOf ?sub2 .
+                    ?sub2 rdfs:label ?sub2Label .
+                }
+            }
+        }
+        """
+
+        val queryResult = cxn.prepareGraphQuery(query).evaluate()
+        
+        val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
+        while (queryResult.hasNext()) 
+        {
+            val statement: Statement = queryResult.next()
+            val subject: String = statement.getSubject().toString()
+            val predicate: String = statement.getPredicate().toString()
+            val obj: String = statement.getObject().toString()
+
+            resultList += Array(subject, predicate, obj)
+        }
+        logger.info("result size: " + resultList.size)
+        logger.info("result: " + resultList)
+        resultList.toArray
+    }
+
     def getDiagnosisCodes(start: String, cxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
     {
         val query = s"""
@@ -86,7 +145,7 @@ class GraphDBConnector
         PREFIX umls: <http://bioportal.bioontology.org/ontologies/umls/>
         PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
         PREFIX turbo: <http://transformunify.org/ontologies/>
-        select distinct ?icd ?method where
+        select distinct ?icdAsString ?method ?icd where
         {
             graph ?g  
             {
@@ -96,7 +155,14 @@ class GraphDBConnector
             {
                 <$start> rdfs:label ?mlabel .
             }
+            graph ?icdGraph
+            {
+                ?icd skos:notation ?codeSuffix .
+                ?icd skos:prefLabel ?codeLabel .
+            }
             ?g <http://graphBuilder.org/usedMethod> ?method .
+            BIND(IF (str(?icdGraph) = "http://data.bioontology.org/ontologies/ICD9CM/", "ICD9", "ICD10") as ?icdGraphAsString)
+            BIND(CONCAT(str(?icdGraphAsString), " ", str(?codeSuffix), " ", str(?codeLabel)) AS ?icdAsString)
         }
       """
       val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
@@ -104,10 +170,11 @@ class GraphDBConnector
       while (tupleQueryResult.hasNext()) 
       {
           val bindingset: BindingSet = tupleQueryResult.next()
-          var code: String = bindingset.getValue("icd").toString
-          var method: String = bindingset.getValue("method").toString
-          if (resultList.contains(code)) resultList(code) += method
-          else resultList += code -> ArrayBuffer(method)
+          var codeAsString: String = bindingset.getValue("icdAsString").toString.replaceAll("\"","")
+          var method: String = bindingset.getValue("method").toString.replaceAll("\"","")
+          var code: String = bindingset.getValue("icdAsString").toString
+          if (resultList.contains(codeAsString)) resultList(codeAsString) += method
+          else resultList += codeAsString -> ArrayBuffer(method)
       }
       logger.info("result size: " + resultList.size)
       resultList 
@@ -271,7 +338,7 @@ class GraphDBConnector
           while (tupleQueryResult.hasNext())
           {
               val nextItem = tupleQueryResult.next
-              val method = nextItem.getValue("method").toString
+              val method = nextItem.getValue("method").toString.replaceAll("\"","")
               resBuffer += method
           }
           if (resBuffer.size == 0) logger.info("no concept ID mappings found in TURBO ontology")

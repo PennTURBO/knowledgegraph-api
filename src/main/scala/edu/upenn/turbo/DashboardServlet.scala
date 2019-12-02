@@ -107,6 +107,35 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
+  post("/diagnoses/getSemanticContextForDiseaseURIs")
+  {
+      logger.info("Received a post request")
+      var parsedResult: Array[String] = null
+      try 
+      { 
+          val userInput = request.body
+          logger.info("received: " + userInput)
+          val extractedResult = parse(userInput).extract[DrugClassInputs]
+          parsedResult = extractedResult.searchList
+          logger.info("extracted search term")
+
+          try
+          {
+              TwoDimensionalArrListResults(graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn))
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
   post("/diagnoses/getICDCodesFromDiseaseURI")
   {
       logger.info("Received a post request")
