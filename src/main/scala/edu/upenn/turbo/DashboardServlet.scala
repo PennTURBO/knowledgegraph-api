@@ -60,6 +60,7 @@ case class DiagnosisPathways(resultsList: Array[String])
 case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
+case class ListOfStringToStringHashMapsResult(resultsList: Array[HashMap[String,String]])
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 {
@@ -92,7 +93,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
           try
           {
-              TwoDimensionalArrListResults(graphDB.getDiseaseURIs(parsedResult, diagCxn))
+              ListOfStringToStringHashMapsResult(graphDB.getDiseaseURIs(parsedResult, diagCxn))
           }
           catch
           {

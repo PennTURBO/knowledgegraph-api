@@ -32,46 +32,83 @@ class GraphDBConnector
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")
 
-    def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[Array[String]] =
+    def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[HashMap[String,String]] =
     {
-        var startListAsString = ""
-        for (code <- startingCodes) startListAsString += " <" + code + "> "
-        logger.info("launching query to Graph DB")
-        val query = s"""
-            PREFIX obo: <http://purl.obolibrary.org/obo/>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
-            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-            PREFIX j.0: <http://example.com/resource/>
-            PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
-            select distinct ?icd ?mondo ?mlabel ?method where
-            {
-                values ?icd {$startListAsString}
-                graph ?g 
-                {
-                    ?mondo <http://graphBuilder.org/mapsTo> ?icd .
-                }
-                graph obo:mondo.owl
-                {
-                    ?mondo rdfs:label ?mlabel .
-                }
-                ?g <http://graphBuilder.org/usedMethod> ?method .
-            }
-            order by ?icd ?mondo"""
-
-        val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-        val resultList: ArrayBuffer[Array[String]] = new ArrayBuffer[Array[String]]
-        while (tupleQueryResult.hasNext()) 
+        var resultList = new ArrayBuffer[HashMap[String,String]]
+        val chunkedLists = startingCodes.grouped(10000).toList()
+        for (smallList <- chunkedLists)
         {
-            val bindingset: BindingSet = tupleQueryResult.next()
-            var icdSub: String = bindingset.getValue("icd").toString
-            var mondoSub: String = bindingset.getValue("mondo").toString
-            var mondoLabel: String = bindingset.getValue("mlabel").toString
-            var method: String = bindingset.getValue("method").toString
-            //logger.info(icdSub + " " + mondoSub + " " + mondoLabel + " " + method)
-            resultList += Array(icdSub, mondoSub, mondoLabel, method)
-        }
+            var startListAsString = ""
+            for (code <- startingCodes) startListAsString += " <" + code + "> "
+            logger.info("launching query to Graph DB")
+            val query = s"""
+                PREFIX obo: <http://purl.obolibrary.org/obo/>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
+                PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+                PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+                PREFIX j.0: <http://example.com/resource/>
+                PREFIX snomed: <http://purl.bioontology.org/ontology/SNOMEDCT/>
+                PREFIX graphBuilder: <http://graphBuilder.org/>
+                select ?mondoSub ?mondoLabel ?rare ?syndromic ?congenital ?pathFamily ?assertionOrientation ?assertedPredicate ?icdLeaf ?icdVer ?icdCode ?icdLabel where
+                {
+                    Values ?icdLeaf {$startListAsString}
+                    graph pmbb:cached_mondo_icd_mappings
+                    {
+                        ?mapItem a graphBuilder:cachedMapping .
+                        ?mapItem graphBuilder:hasMondoTerm ?mondoSub .
+                        ?mapItem graphBuilder:hasIcdTerm ?icdLeaf .
+                        ?mapItem graphBuilder:mondoLabel ?mondoLabel .
+                        ?mapItem graphBuilder:pathFamily ?pathFamily .
+                        ?mapItem graphBuilder:assertionOrientation ?assertionOrientation .
+                        ?mapItem graphBuilder:assertedPredicate ?assertedPredicate .
+                        ?mapItem graphBuilder:icdVersion ?icdVer .
+                        ?mapItem graphBuilder:icdAsString ?icdCode .
+                        ?mapItem graphBuilder:icdLabel ?icdLabel .
+                        ?mapItem graphBuilder:isRare ?rare .
+                        ?mapItem graphBuilder:isCongenital ?congenital .
+                        ?mapItem graphBuilder:isSyndromic ?syndromic .
+                    }
+
+                    minus
+                    {
+                        graph pmbb:cached_mondo_icd_mappings
+                        {
+                            ?mapItem2 a graphBuilder:cachedMapping .
+                            ?mapItem2 graphBuilder:hasMondoTerm ?mondoSub2 .
+                            ?mapItem2 graphBuilder:hasIcdTerm ?icdLeaf .   
+                        }
+                        graph <http://example.com/resource/MondoTransitiveSubClasses>
+                        {
+                            ?mondoSub2 rdfs:subClassOf ?mondoSub .
+                            filter (?mondoSub2 != ?mondoSub)
+                        }
+                    }
+                }"""
+
+            println(query)    
+
+            val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+            while (tupleQueryResult.hasNext()) 
+            {
+                val singleResultMap = new HashMap[String,String]
+                val bindingset: BindingSet = tupleQueryResult.next()
+                singleResultMap += "MondoTerm" -> bindingset.getValue("mondoSub").toString
+                singleResultMap += "MondoLabel" -> bindingset.getValue("mondoLabel").toString
+                singleResultMap += "rare" -> bindingset.getValue("rare").toString
+                singleResultMap += "syndromic" -> bindingset.getValue("syndromic").toString
+                singleResultMap += "congenital" -> bindingset.getValue("congenital").toString
+                singleResultMap += "PathFamily" -> bindingset.getValue("pathFamily").toString
+                singleResultMap += "AssertionOrientation" -> bindingset.getValue("assertionOrientation").toString
+                singleResultMap += "AssertedPredicate" -> bindingset.getValue("assertedPredicate").toString
+                singleResultMap += "Icd" -> bindingset.getValue("icdLeaf").toString
+                singleResultMap += "IcdVersion" -> bindingset.getValue("icdVer").toString
+                singleResultMap += "IcdCode" -> bindingset.getValue("icdCode").toString
+                singleResultMap += "IcdLabel" -> bindingset.getValue("icdLabel").toString
+                resultList += singleResultMap
+            }
+          }
+        
         logger.info("result size: " + resultList.size)
         resultList.toArray
     }
