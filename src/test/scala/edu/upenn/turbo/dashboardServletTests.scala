@@ -278,30 +278,6 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
 
-  test("POST /ontologies/getUriFromOmopConceptId with params")
-  {
-      val res = post("/ontologies/getUriFromOmopConceptId", "{\"searchTerm\":\"3036277\"}")
-      {
-        status should equal (200)
-      }
-  }
-  
-  test("POST /ontologies/getUriFromOmopConceptId no params")
-  {
-      val res = post("/ontologies/getUriFromOmopConceptId")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("POST /ontologies/getUriFromOmopConceptId bad params")
-  {
-      val res = post("/ontologies/getUriFromOmopConceptId", "not_a_param")
-      {
-        status should equal (400)
-      }
-  }
-
   test("POST /ontologies/getOmopConceptMap")
   {
       val res = post("/ontologies/getOmopConceptMap")

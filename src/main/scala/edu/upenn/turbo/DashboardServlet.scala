@@ -295,38 +295,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/ontologies/getUriFromOmopConceptId")
-  {
-      logger.info("Received a post request")
-      var parsedResult: String = null
-
-      try 
-      { 
-          val userInput = request.body
-          val extractedResult = parse(userInput).extract[OmopConceptIdInput]
-          parsedResult = extractedResult.searchTerm
-          parsedResult.toInt 
-          logger.info("Input id: " + parsedResult)
-          try
-          {
-            val res = graphDB.getURIFromOmopConceptId(ontCxn, parsedResult)
-            if (res == null) throw new RuntimeException("res is null")
-            OmopConceptIdUri(res)
-          }
-          catch
-          {
-              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
-          }
-      } 
-      catch 
-      {
-          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
-          case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
-      }
-  }
-
   post("/ontologies/getOmopConceptMap")
   {
       logger.info("Received a post request")

@@ -323,37 +323,6 @@ class GraphDBConnector
           else None
       }
 
-      def getURIFromOmopConceptId(cxn: RepositoryConnection, conceptId: String): String =
-      {
-          val sparql = s"""
-
-              PREFIX turbo: <http://transformunify.org/ontologies/>
-              PREFIX pmbb: <http://www.itmat.upenn.edu/biobank/>
-              select ?uri where
-              {
-                 graph <https://raw.githubusercontent.com/PennTURBO/Turbo-Ontology/master/ontologies/turbo_merged.owl>
-                 {
-                     ?uri turbo:TURBO_0010147 $conceptId .
-                 }
-              }
-
-          """
-          val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, sparql).evaluate()
-          var res: String = ""
-          if (tupleQueryResult.hasNext())
-          {
-              res = tupleQueryResult.next.getValue("uri").toString
-              if (tupleQueryResult.hasNext()) 
-              {
-                  logger.info(s"multiple URIs found for concept ID $conceptId")
-                  return null
-              }
-          }
-          else logger.info(s"concept ID $conceptId returned no URI results from the turbo ontology")
-          res  
-          
-      }
-
       def getOmopConceptMap(cxn: RepositoryConnection): Map[String,String] =
       {
           val sparql = s"""
