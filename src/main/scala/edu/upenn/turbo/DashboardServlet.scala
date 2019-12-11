@@ -97,7 +97,11 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           }
           catch
           {
-              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              case e: RuntimeException => 
+              {
+                  println(e.toString)
+                  InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
           }
       } 
       catch 
@@ -151,11 +155,15 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
           try
           { 
-              DiagnosisCodeResult(parsedResult, graphDB.getDiagnosisCodes(parsedResult, diagCxn))
+              ListOfStringToStringHashMapsResult(graphDB.getDiagnosisCodes(parsedResult, diagCxn))
           }
           catch
           {
-              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              case e: RuntimeException => 
+              {
+                println(e.toString)
+                InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
           }
       } 
       catch 
