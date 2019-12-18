@@ -328,7 +328,7 @@ class GraphDBConnector
           PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
           PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
           SELECT ?entity ?score ?label {
-              ?search a inst:MONDO_labelsAndSynonyms ;
+              ?search a inst:MonDO_labelsAndSynonyms ;
                       :query "mondoLabel:"""+userInput+""" OR mondoExactSynonym:"""+userInput+"""" ;
                                                  :entities ?entity .
               ?entity :score ?score .
@@ -362,7 +362,6 @@ class GraphDBConnector
                      ?uri turbo:TURBO_0010147 ?conceptId .
                      filter (?conceptId != 0)
                  }
-
               }
 
           """

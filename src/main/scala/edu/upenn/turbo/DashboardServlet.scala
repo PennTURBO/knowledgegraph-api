@@ -321,38 +321,4 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e5: RuntimeException => NoContent(Map("message" -> "Unknown internal server error"))
       }
   }
-
-  /*post("/medications/findHopsAwayFromDrug")
-  {
-      logger.info("Received a post request")
-      var parsedResult: Array[String] = null
-
-      try 
-      { 
-          val userInput = request.body
-          val extractedResult = parse(userInput).extract[DrugClassInputs]
-          parsedResult = extractedResult.searchList
-          logger.info("Input class: " + parsedResult)
-          var g: GraphTraversalSource = null
-          try 
-          { 
-              g = neo4jgraph.traversal()
-              logger.info("Successfully connected to property graph")
-            
-              DrugHopsResults(neo4j.getHopsAwayFromTopLevelClass(parsedResult, "http://purl.obolibrary.org/obo/MONDO_0000001", g))
-          }
-          finally
-          {
-              g.close()
-              logger.info("Connections closed.")
-              println()
-          }
-      } 
-      catch 
-      {
-          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
-      }
-  }*/
 }
