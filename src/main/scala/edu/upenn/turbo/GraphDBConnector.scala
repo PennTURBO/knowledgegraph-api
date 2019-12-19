@@ -50,7 +50,7 @@ class GraphDBConnector
                 select ?mondoSub ?mondoLabel ?rare ?syndromic ?congenital ?pathFamily ?assertionOrientation ?assertedPredicate ?icdLeaf ?icdVer ?icdCode ?icdLabel where
                 {
                     Values ?icdLeaf {$startListAsString}
-                    graph pmbb:cached_mondo_icd_mappings
+                    graph pmbb:cached_mondo_icd_mappings_LEAFONLY
                     {
                         ?mapItem a graphBuilder:cachedMapping .
                         ?mapItem graphBuilder:hasMondoTerm ?mondoSub .
@@ -66,22 +66,6 @@ class GraphDBConnector
                         ?mapItem graphBuilder:isCongenital ?congenital .
                         ?mapItem graphBuilder:isSyndromic ?syndromic .
                     }
-
-                    minus
-                    {
-                        graph pmbb:cached_mondo_icd_mappings
-                        {
-                            ?mapItem2 a graphBuilder:cachedMapping .
-                            ?mapItem2 graphBuilder:hasMondoTerm ?mondoSub2 .
-                            ?mapItem2 graphBuilder:hasIcdTerm ?icdLeaf .   
-                        }
-                        graph <http://example.com/resource/MondoTransitiveSubClasses>
-                        {
-                            ?mondoSub2 rdfs:subClassOf ?mondoSub .
-                            filter (?mondoSub2 != ?mondoSub)
-                        }
-                    }
-                    
                 }
                 Order By ?mondoSub ?icdLeaf"""
 
@@ -182,7 +166,7 @@ class GraphDBConnector
             graph <http://example.com/resource/MondoTransitiveSubClasses> {
                 ?mondoSub rdfs:subClassOf <$start> .
             }
-            graph pmbb:cached_mondo_icd_mappings
+            graph pmbb:cached_mondo_icd_mappings_LEAFONLY
             {
                 ?mapItem a graphBuilder:cachedMapping .
                 ?mapItem graphBuilder:hasMondoTerm ?mondoSub .
@@ -197,21 +181,6 @@ class GraphDBConnector
                 ?mapItem graphBuilder:isRare ?rare .
                 ?mapItem graphBuilder:isCongenital ?congenital .
                 ?mapItem graphBuilder:isSyndromic ?syndromic .
-            }
-
-            minus
-            {
-                graph pmbb:cached_mondo_icd_mappings
-                {
-                    ?mapItem2 a graphBuilder:cachedMapping .
-                    ?mapItem2 graphBuilder:hasMondoTerm ?mondoSub2 .
-                    ?mapItem2 graphBuilder:hasIcdTerm ?icdLeaf .   
-                }
-                graph <http://example.com/resource/MondoTransitiveSubClasses>
-                {
-                    ?mondoSub2 rdfs:subClassOf ?mondoSub .
-                    filter (?mondoSub2 != ?mondoSub)
-                }
             }
         }
         Order By ?mondoSub ?icdLeaf
