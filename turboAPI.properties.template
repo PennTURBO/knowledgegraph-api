@@ -1,6 +1,6 @@
 serviceURL = http://turbo-prd-db01.pmacs.upenn.edu:7200/
 medications_repository = med_map_support_20180403_boosted_20190426
-diagnoses_repository = Hayden_diseaseToDiagnosis
+diagnoses_repository = Diagnosis_KnowledgeGraph
 ontology_repository = Haydens_graph_model
 username = your_username
 password = your_password
