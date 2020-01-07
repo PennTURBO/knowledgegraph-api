@@ -103,23 +103,38 @@ mediaType: application/json
 				application/json
 				  example:
 					{
-						"searchTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
-						"resultsList": {
-							"http://purl.bioontology.org/ontology/ICD10CM/C82.33": [
-								"\"mondo skos:exactMatch snomed -> shared cui\""
-							],
-							"http://purl.bioontology.org/ontology/ICD9CM/149.9": [
-								"\"mondo owl:equivalentClass snomed with icd9 map\"",
-								"\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
-								"\"mondo skos:closeMatch snomed -> shared cui\"",
-								"\"mondo skos:closeMatch snomed with icd9 map\"",
-								"\"mondo skos:exactMatch snomed -> shared cui\"",
-								"\"mondo skos:exactMatch snomed with icd9 map\""
-							],
-							"http://purl.bioontology.org/ontology/ICD10CM/C82.27": [
-								"\"mondo skos:exactMatch snomed -> shared cui\""
-							],
-					},
+					    "resultsList": [
+					        {
+					            "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
+					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
+					            "AssertionOrientation": "\"forward\"",
+					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
+					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
+					            "IcdCode": "\"D02.2\"",
+					            "IcdVersion": "\"ICD10\"",
+					            "AssertedPredicate": "http://example.com/resource/mdbxr",
+					            "MondoLabel": "\"bronchus carcinoma in situ\""
+					        },
+					        {
+					            "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
+					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
+					            "AssertionOrientation": "\"forward\"",
+					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
+					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
+					            "IcdCode": "\"D02.2\"",
+					            "IcdVersion": "\"ICD10\"",
+					            "AssertedPredicate": "http://www.w3.org/2002/07/owl#equivalentClass",
+					            "MondoLabel": "\"bronchus carcinoma in situ\""
+					        },
+					    	...
+					    ]
+					}
 			400:
 			  body:
 				application/json:
@@ -142,21 +157,38 @@ mediaType: application/json
 				application/json
 				  example:
 					{
-						"mappedInputTerm": "http://purl.obolibrary.org/obo/MONDO_0004992",
-						{
-						"resultsList": [
-							[
-								"http://purl.bioontology.org/ontology/ICD9CM/759.89",
-								"http://purl.obolibrary.org/obo/MONDO_0007534",
-								"\"Beckwith-Wiedemann syndrome\""
-							],
-							[
-								"http://purl.bioontology.org/ontology/ICD9CM/759.89",
-								"http://purl.obolibrary.org/obo/MONDO_0016006",
-								"\"Cockayne syndrome\""
-							],...
-						}
-					},
+					    "resultsList": [
+					        {
+					            "IcdLabel": "\"Other specified congenital anomalies\"@en",
+					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "Icd": "http://purl.bioontology.org/ontology/ICD9CM/759.89",
+					            "AssertionOrientation": "\"forward\"",
+					            "PathFamily": "\"mondo->snomed->NLM mappings->icd9\"",
+					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000127",
+					            "IcdCode": "\"759.89\"",
+					            "IcdVersion": "\"ICD9\"",
+					            "AssertedPredicate": "http://example.com/resource/mdbxr",
+					            "MondoLabel": "\"geleophysic dysplasia\""
+					        },
+					        {
+					            "IcdLabel": "\"Congenital iodine-deficiency syndrome\"@en",
+					            "congenital": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/E00",
+					            "AssertionOrientation": "\"forward\"",
+					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
+					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0018612",
+					            "IcdCode": "\"E00\"",
+					            "IcdVersion": "\"ICD10\"",
+					            "AssertedPredicate": "http://example.com/resource/mdbxr",
+					            "MondoLabel": "\"congenital hypothyroidism\""
+        					},
+        					...
+					    ]
+					}
 			400:
 			  body:
 				application/json:
@@ -206,35 +238,6 @@ mediaType: application/json
 			        ],
                 ...
               }
-	/getAllDiagnosisMappingPaths:
-	post:
-	  queryParameters:
-		None
-		responses:
-		  200:
-			body:
-			  application/json
-				example:
-				  {
-					  "resultsList": [
-						  "\"mondo owl:equivalentClass snomed -> shared cui\"",
-						  "\"mondo owl:equivalentClass snomed with icd9 map\"",
-						  "\"mondo oboInOwl:hasDbXref snomed -> shared cui\"",
-						  "\"mondo oboInOwl:hasDbXref snomed with icd9 map\"",
-						  "\"mondo skos:closeMatch snomed -> shared cui\"",
-						  "\"mondo skos:closeMatch snomed with icd9 map\"",
-						  "\"mondo skos:exactMatch snomed -> shared cui\"",
-						  "\"mondo skos:exactMatch snomed with icd9 map\"",
-						  "\"mondo oboInOwl:hasDbXref cui\"",
-						  "\"mondo skos:closeMatch cui\"",
-						  "\"mondo skos:exactMatch cui\"",
-						  "\"mondo oboInOwl:hasDbXref icd10\"",
-						  "\"mondo oboInOwl:hasDbXref icd9 WITHOUT range subclasses\"",
-						  "\"cui owl:equivalentClass mondo\"",
-						  "\"icd9 owl:equivalentClass mondo\"",
-						  "\"icd10 owl:equivalentClass mondo\""
-					  ]
-				   }
 /ontologies:
 	/getUriFromOmopConceptId:
 	post:

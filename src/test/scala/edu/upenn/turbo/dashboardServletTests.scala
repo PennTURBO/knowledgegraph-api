@@ -89,7 +89,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   {
     get("/") 
     {
-      status should equal (200)
+      assert(status == 200)
     }
   }
   
@@ -221,30 +221,6 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
         status should equal (400)
       }
   }
-  
-  /*test("POST /medications/findHopsAwayFromDrug with params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_23888\"]}")
-      {
-        status should equal (200)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug no params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug bad params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug", "{bad_param}")
-      {
-        status should equal (400)
-      }
-  }*/
 
   test("POST /diagnoses/getDiseaseURIsFromICDCodes bad params")
   {
@@ -267,14 +243,6 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val res = post("/diagnoses/getDiseaseURIsFromICDCodes")
       {
         status should equal (400)
-      }
-  }
-
-  test("POST /diagnoses/getAllDiagnosisMappingPaths")
-  {
-      val res = post("/diagnoses/getAllDiagnosisMappingPaths")
-      {
-        status should equal (200)
       }
   }
 
