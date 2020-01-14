@@ -103,7 +103,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   
   test("POST /diagnoses/getICDCodesFromDiseaseURI with params")
   {
-      val res = post("/diagnoses/getICDCodesFromDiseaseURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/MONDO_0004992\"}")
+      val res = post("/diagnoses/getICDCodesFromDiseaseURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/MONDO_0004992\",\"filterMethod\":\"LEAF\"}")
       {
         status should equal (200)
       }
@@ -232,7 +232,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
 
   test("POST /diagnoses/getDiseaseURIsFromICDCodes with params")
   {
-      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{\"searchList\":[\"http://purl.bioontology.org/ontology/ICD9CM/285.9\", \"http://purl.bioontology.org/ontology/ICD10CM/E00\", \"http://purl.bioontology.org/ontology/ICD9CM/103.9\"]}")
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{\"searchList\":[\"http://purl.bioontology.org/ontology/ICD9CM/285.9\", \"http://purl.bioontology.org/ontology/ICD10CM/E00\", \"http://purl.bioontology.org/ontology/ICD9CM/103.9\"],\"filterMethod\":\"LEAF\"}")
       {
         status should equal (200)
       }

@@ -95,7 +95,7 @@ mediaType: application/json
 		  displayName: searchTerm
 		  type: JSON String
 		  description: MONDO URI representing a disease
-		  example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992"}
+		  example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992", "filterMethod":"LEAF"}
 		  required: true
 		  responses:
 			200:
@@ -149,7 +149,7 @@ mediaType: application/json
 		  displayName: searchList
 		  type: JSON String Array
 		  description: List of ICD9 or ICD10 codes (can mix and match)
-		  example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"]}
+		  example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"], "filterMethod":"NONE"}
 		  required: true
 		  responses:
 			200:

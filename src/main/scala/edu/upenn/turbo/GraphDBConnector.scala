@@ -32,8 +32,11 @@ class GraphDBConnector
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")
 
-    def getDiseaseURIs(startingCodes: Array[String], cxn: RepositoryConnection): Array[HashMap[String,String]] =
+    def getDiseaseURIs(startingCodes: Array[String], filterMethod: String, cxn: RepositoryConnection): Array[HashMap[String,String]] =
     {
+        var graphName = "pmbb:cached_mondo_icd_mappings"
+        if (filterMethod == "LEAF") graphName += "_LEAFONLY"
+        
         var resultList = new ArrayBuffer[HashMap[String,String]]
         val chunkedListsItr = startingCodes.grouped(10000)
         while (chunkedListsItr.hasNext)
@@ -50,7 +53,7 @@ class GraphDBConnector
                 select ?mondoSub ?mondoLabel ?rare ?syndromic ?congenital ?pathFamily ?assertionOrientation ?assertedPredicate ?icdLeaf ?icdVer ?icdCode ?icdLabel where
                 {
                     Values ?icdLeaf {$startListAsString}
-                    graph pmbb:cached_mondo_icd_mappings_LEAFONLY
+                    graph $graphName
                     {
                         ?mapItem a graphBuilder:cachedMapping .
                         ?mapItem graphBuilder:hasMondoTerm ?mondoSub .
@@ -121,7 +124,9 @@ class GraphDBConnector
         WHERE {
             values ?target {$startListAsString}
             {
-                ?target <http://graphBuilder.org/mapsTo> ?code .
+                ?mapping a <http://graphBuilder.org/cachedMapping> .
+                ?mapping <http://graphBuilder.org/hasMondoTerm> ?target .
+                ?mapping <http://graphBuilder.org/hasIcdTerm> ?code .
                 ?code skos:prefLabel ?codeLabel .
                 ?code skos:notation ?notation 
             } 
@@ -149,13 +154,14 @@ class GraphDBConnector
 
             resultList += Array(subject, predicate, obj)
         }
-        logger.info("result size: " + resultList.size)
-        logger.info("result: " + resultList)
         resultList.toArray
     }
 
-    def getDiagnosisCodes(start: String, cxn: RepositoryConnection): Array[HashMap[String,String]] =
+    def getDiagnosisCodes(start: String, filterMethod: String, cxn: RepositoryConnection): Array[HashMap[String,String]] =
     {
+        var graphName = "pmbb:cached_mondo_icd_mappings"
+        if (filterMethod == "LEAF") graphName += "_LEAFONLY"
+
         val query = s"""
         PREFIX obo: <http://purl.obolibrary.org/obo/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -166,7 +172,7 @@ class GraphDBConnector
             graph <http://example.com/resource/MondoTransitiveSubClasses> {
                 ?mondoSub rdfs:subClassOf <$start> .
             }
-            graph pmbb:cached_mondo_icd_mappings_LEAFONLY
+            graph $graphName
             {
                 ?mapItem a graphBuilder:cachedMapping .
                 ?mapItem graphBuilder:hasMondoTerm ?mondoSub .

@@ -49,13 +49,14 @@ case class MedFullNameInput(searchList: Array[String])
 case class MedFullNameResults(resultsMap: HashMap[String, ArrayBuffer[String]])
 case class MedicationFreeText(searchTerm: String)
 case class DiagnosisFreeText(searchTerm: String)
-case class DiagnosisTermInput(searchTerm: String)
+case class DiagnosisTermInput(searchTerm: String, filterMethod: String)
 case class OmopConceptIdInput(searchTerm: String)
 case class OmopConceptIdUri(result: String)
 case class OmopConceptMap(result: Map[String, String])
 case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
-case class DrugClassInputs(searchList: Array[String])
+case class DrugClassInputs(searchList: Array[String], filterMethod: String)
+case class SemanticContextDrugInput(searchList: Array[String])
 case class DiagnosisPathways(resultsList: Array[String])
 case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
@@ -83,17 +84,25 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   {
       logger.info("Received a post request")
       var parsedResult: Array[String] = null
+      var filterMethod: String = null
       try 
       { 
           val userInput = request.body
           logger.info("received: " + userInput)
           val extractedResult = parse(userInput).extract[DrugClassInputs]
           parsedResult = extractedResult.searchList
+          filterMethod = extractedResult.filterMethod
           logger.info("extracted search term")
 
           try
           {
-              ListOfStringToStringHashMapsResult(graphDB.getDiseaseURIs(parsedResult, diagCxn))
+              val res = graphDB.getDiseaseURIs(parsedResult, filterMethod, diagCxn)
+              if (res.size == 0)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else ListOfStringToStringHashMapsResult(res)
           }
           catch
           {
@@ -120,13 +129,19 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       { 
           val userInput = request.body
           logger.info("received: " + userInput)
-          val extractedResult = parse(userInput).extract[DrugClassInputs]
+          val extractedResult = parse(userInput).extract[SemanticContextDrugInput]
           parsedResult = extractedResult.searchList
           logger.info("extracted search term")
 
           try
           {
-              TwoDimensionalArrListResults(graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn))
+              val res = graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn)
+              if (res.size == 0)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else TwoDimensionalArrListResults(res)
           }
           catch
           {
@@ -145,17 +160,25 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
   {
       logger.info("Received a post request")
       var parsedResult: String = null
+      var filterMethod: String = null
       try 
       { 
           val userInput = request.body
           logger.info("received: " + userInput)
           val extractedResult = parse(userInput).extract[DiagnosisTermInput]
           parsedResult = extractedResult.searchTerm
+          filterMethod = extractedResult.filterMethod
           logger.info("extracted search term")
 
           try
           { 
-              ListOfStringToStringHashMapsResult(graphDB.getDiagnosisCodes(parsedResult, diagCxn))
+              val res = graphDB.getDiagnosisCodes(parsedResult, filterMethod, diagCxn)
+              if (res.size == 0)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else ListOfStringToStringHashMapsResult(res)
           }
           catch
           {
@@ -187,7 +210,14 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
           try
           {
-              MedFullNameResults(graphDB.getMedicationFullNameResults(parsedResult, medCxn))
+              val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn)
+              if (res.size == 0)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else MedFullNameResults(res)
+
           }
           catch
           {
