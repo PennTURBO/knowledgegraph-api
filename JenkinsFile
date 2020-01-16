@@ -28,7 +28,7 @@ pipeline {
                 sh 'cp turboAPI.properties.template turboAPI.properties'
 
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'c4eadbd2-96b2-4a2f-96fb-55377e40b290', usernameVariable: 'graphDbUserName', passwordVariable: 'graphDbPassword')]) {
+                    withCredentials([usernamePassword(credentialsId: 'Hayden_prd_graphDB_credentials', usernameVariable: 'graphDbUserName', passwordVariable: 'graphDbPassword')]) {
                         sh "sed -i 's/username = your_username/username = $graphDbUserName/g' turboAPI.properties"
                         sh "sed -i 's/password = your_password/password = $graphDbPassword/g' turboAPI.properties"
                     }
