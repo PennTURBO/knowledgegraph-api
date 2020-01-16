@@ -97,7 +97,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   {
     val res = post("/notExists")
     {
-      status should equal (404)
+      status should equal (2)
     }
   }
   
