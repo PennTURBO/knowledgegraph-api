@@ -36,6 +36,7 @@ class GraphDBConnector
     {
         var graphName = "pmbb:cached_mondo_icd_mappings"
         if (filterMethod == "LEAF") graphName += "_LEAFONLY"
+        else if (filterMethod == "REVERSEMAPS_DEPTH_FORMULA") graphName += "_depthTimesMappingCountFormulaOnly"
         
         var resultList = new ArrayBuffer[HashMap[String,String]]
         val chunkedListsItr = startingCodes.grouped(10000)
@@ -161,6 +162,7 @@ class GraphDBConnector
     {
         var graphName = "pmbb:cached_mondo_icd_mappings"
         if (filterMethod == "LEAF") graphName += "_LEAFONLY"
+        else if (filterMethod == "REVERSEMAPS_DEPTH_FORMULA") graphName += "_depthTimesMappingCountFormulaOnly"
 
         val query = s"""
         PREFIX obo: <http://purl.obolibrary.org/obo/>
