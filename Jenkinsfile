@@ -50,6 +50,22 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Dev Server') {
+            when {
+                branch 'master'
+            }
+            steps {
+                build 'turbo-dev-app01 TurboAPI deploy'
+            }
+        }
+        stage('Deploy to Prd Server') {
+            when {
+                branch 'production'
+            }
+            steps {
+                echo 'coming soon'
+            }
+        }
     }
     post {
         failure {
