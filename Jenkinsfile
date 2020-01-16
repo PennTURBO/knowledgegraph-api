@@ -16,12 +16,12 @@ pipeline {
         stage('Setup Workspace') { 
             steps {
 
-                git(
+                /*git(
                     //credentialsId: 'github-jenkins-spaghetti',
                     branch: "master", 
                     url: 'git@github.com:PennTURBO/Turbo-API.git'
-                )
-                //checkout scm
+                )*/
+                checkout scm
 
                 // setup local workspace
                 fileExists("turboAPI.properties.template")
