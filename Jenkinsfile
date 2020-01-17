@@ -16,19 +16,19 @@ pipeline {
         stage('Setup Workspace') { 
             steps {
 
-                git(
+                /*git(
                     //credentialsId: 'github-jenkins-spaghetti',
                     branch: "master", 
                     url: 'git@github.com:PennTURBO/Turbo-API.git'
-                )
-                //checkout scm
+                )*/
+                checkout scm
 
                 // setup local workspace
                 fileExists("turboAPI.properties.template")
                 sh 'cp turboAPI.properties.template turboAPI.properties'
 
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'c4eadbd2-96b2-4a2f-96fb-55377e40b290', usernameVariable: 'graphDbUserName', passwordVariable: 'graphDbPassword')]) {
+                    withCredentials([usernamePassword(credentialsId: 'Hayden_prd_graphDB_credentials', usernameVariable: 'graphDbUserName', passwordVariable: 'graphDbPassword')]) {
                         sh "sed -i 's/username = your_username/username = $graphDbUserName/g' turboAPI.properties"
                         sh "sed -i 's/password = your_password/password = $graphDbPassword/g' turboAPI.properties"
                     }
@@ -48,6 +48,22 @@ pipeline {
                 always {
                     junit '**/target/test-reports/*.xml'                    
                 }
+            }
+        }
+        stage('Deploy to Dev Server') {
+            when {
+                branch 'master'
+            }
+            steps {
+                build 'Turbo-API deploy turbo-dev-app01'
+            }
+        }
+        stage('Deploy to Prd Server') {
+            when {
+                branch 'production'
+            }
+            steps {
+                echo 'coming soon'
             }
         }
     }
