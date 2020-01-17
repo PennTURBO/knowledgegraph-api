@@ -155,6 +155,7 @@ class GraphDBConnector
 
             resultList += Array(subject, predicate, obj)
         }
+        logger.info("result size: " + resultList.size)
         resultList.toArray
     }
 
@@ -293,6 +294,7 @@ class GraphDBConnector
             val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
             buffResults += singleResult
         }
+        logger.info("result size: " + buffResults.size)
         if (buffResults.size != 0) Some(buffResults)
         else None
       }
@@ -322,6 +324,7 @@ class GraphDBConnector
               val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
               buffResults += singleResult
           }
+          logger.info("result size: " + buffResults.size)
           if (buffResults.size != 0) Some(buffResults)
           else None
       }

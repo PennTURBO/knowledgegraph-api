@@ -188,39 +188,6 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
         status should equal (400)
       }
   }
-  
-  //204 result expected because it uses outdated lucene index which does not exist in new repo
-  test("POST /medications/medicationTextSearch with params")
-  {
-      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"analgesic\"}")
-      {
-        status should equal (204)
-      }
-  }
-  
-  test("POST /medications/medicationTextSearch no params")
-  {
-      val res = post("/medications/medicationTextSearch")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("POST /medications/medicationTextSearch params with no results")
-  {
-      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"not_a_med\"}")
-      {
-        status should equal (204)
-      }
-  }
-  
-  test("POST /medications/medicationTextSearch bad params")
-  {
-      val res = post("/medications/medicationTextSearch", "{bad_param}")
-      {
-        status should equal (400)
-      }
-  }
 
   test("POST /diagnoses/getDiseaseURIsFromICDCodes bad params")
   {

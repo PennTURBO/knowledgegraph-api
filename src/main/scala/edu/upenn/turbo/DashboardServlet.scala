@@ -94,22 +94,26 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           filterMethod = extractedResult.filterMethod
           logger.info("extracted search term")
 
-          try
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
+          else
           {
-              val res = graphDB.getDiseaseURIs(parsedResult, filterMethod, diagCxn)
-              if (res.size == 0)
+              try
               {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
+                  val res = graphDB.getDiseaseURIs(parsedResult, filterMethod, diagCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else ListOfStringToStringHashMapsResult(res)
               }
-              else ListOfStringToStringHashMapsResult(res)
-          }
-          catch
-          {
-              case e: RuntimeException => 
+              catch
               {
-                  println(e.toString)
-                  InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  case e: RuntimeException => 
+                  {
+                      println(e.toString)
+                      InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  }
               }
           }
       } 
@@ -132,20 +136,23 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val extractedResult = parse(userInput).extract[SemanticContextDrugInput]
           parsedResult = extractedResult.searchList
           logger.info("extracted search term")
-
-          try
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
+          else
           {
-              val res = graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn)
-              if (res.size == 0)
+              try
               {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
+                  val res = graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else TwoDimensionalArrListResults(res)
               }
-              else TwoDimensionalArrListResults(res)
-          }
-          catch
-          {
-              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              catch
+              {
+                  case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
           }
       } 
       catch 
@@ -206,28 +213,31 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[MedFullNameInput]
           parsedResult = extractedResult.searchList
-          logger.info("Input class: " + parsedResult)
-
-          try
+          logger.info("Input list: " + parsedResult.mkString(", "))
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
+          else
           {
-              val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn)
-              if (res.size == 0)
+              try
               {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
-              }
-              else MedFullNameResults(res)
+                  val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else MedFullNameResults(res)
 
-          }
-          catch
-          {
-              case e: RuntimeException => 
+              }
+              catch
               {
-                logger.info("error:" + e)
-                InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  case e: RuntimeException => 
+                  {
+                    logger.info("error:" + e)
+                    InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  }
               }
           }
-      } 
+      }
       catch 
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
@@ -236,7 +246,8 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/medications/medicationTextSearch")
+  // We switched to Solr for this service. This request is not updated and will currently not return results for any search term.
+  /*post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
       var parsedResult: String = null
@@ -245,6 +256,8 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[MedicationFreeText]
           parsedResult = extractedResult.searchTerm
+          logger.info("search term: " + parsedResult)
+
           var topResults: Option[ArrayBuffer[ArrayBuffer[String]]] = None
           try
           {
@@ -276,7 +289,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }
+  }*/
 
   post("/diagnoses/diagnosisTextSearch")
   {
@@ -287,6 +300,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           val userInput = request.body
           val extractedResult = parse(userInput).extract[DiagnosisFreeText]
           parsedResult = extractedResult.searchTerm
+          logger.info("search term: " + parsedResult)
           try
           {
               val topResults = graphDB.getBestMatchTermForDiagnosisLookup(diagCxn, parsedResult, 10)
