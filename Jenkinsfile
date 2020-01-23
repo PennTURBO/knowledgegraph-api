@@ -63,7 +63,7 @@ pipeline {
                 branch 'production'
             }
             steps {
-                echo 'coming soon'
+                build 'Turbo-API deploy turbo-prd-app01'
             }
         }
     }
