@@ -1,4 +1,4 @@
-FROM amd64/openjdk
+FROM amd64/openjdk:12
 
 ENV SBT_VERSION 1.1.4
 
