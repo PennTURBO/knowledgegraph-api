@@ -4,7 +4,11 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   scalaVersion in ThisBuild := "2.11.8",
   test in assembly := {},
+<<<<<<< HEAD
   name := "Turbo-API"
+=======
+  name := "TurboAPI"
+>>>>>>> master
 )
 
 val ScalatraVersion = "2.6.3"
@@ -18,7 +22,11 @@ lazy val app = (project in file("app")).
 lazy val utils = (project in file("utils")).
   settings(commonSettings: _*).
   settings(
+<<<<<<< HEAD
     assemblyJarName in assembly := "turbo-api.jar",
+=======
+    assemblyJarName in assembly := "turboAPI.jar",
+>>>>>>> master
   )
 
 resolvers += Resolver.mavenLocal
@@ -70,7 +78,8 @@ resolvers += Classpaths.typesafeReleases
 libraryDependencies ++= Seq(
   "org.scalatra" %% "scalatra" % ScalatraVersion,
   "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
-  "ch.qos.logback" % "logback-classic" % "1.2.3" % "runtime",
+  "org.pegdown" % "pegdown" % "1.6.0" % Test, // for html reports, see <https://stackoverflow.com/questions/37056570/how-to-generate-html-reports-on-play-scalatest>
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
   "org.eclipse.jetty" % "jetty-webapp" % "9.4.9.v20180320" % "container;compile",
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
   "org.json4s" % "json4s-jackson_2.11" % "3.5.2",
@@ -95,3 +104,4 @@ libraryDependencies ++= Seq(
 enablePlugins(SbtTwirl)
 enablePlugins(ScalatraPlugin)
 
+testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports/html")

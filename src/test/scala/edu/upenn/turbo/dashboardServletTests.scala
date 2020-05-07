@@ -1,16 +1,95 @@
 package edu.upenn.turbo
 
+import org.scalatest.BeforeAndAfterAll
 import org.scalatra.test.scalatest._
 
-class dashboardServletTests extends ScalatraFunSuite {
+import org.eclipse.rdf4j.repository.Repository
+import org.eclipse.rdf4j.repository.RepositoryConnection
+import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
+import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
+
+class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with DashboardProperties {
 
   addServlet(classOf[DashboardServlet], "/*")
+
+  override def beforeAll()
+  {
+      super.beforeAll()
+      //establish connections to graph databases
+      /*println("connecting to neo4j...")
+
+      val neo4jgraph = Neo4jGraph.open("neo4j.graph")
+      Neo4jGraphConnection.setGraph(neo4jgraph)*/
+
+      println("connecting to graph db...")
+
+      val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      diagRepoManager.initialize()
+      val diagRepository = diagRepoManager.getRepository(getFromProperties("diagnoses_repository"))
+      val diagCxn = diagRepository.getConnection()
+
+      GraphDbConnection.setDiagRepoManager(diagRepoManager)
+      GraphDbConnection.setDiagRepository(diagRepository)
+      GraphDbConnection.setDiagConnection(diagCxn)
+
+      val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      medRepoManager.initialize()
+      val medRepository = medRepoManager.getRepository(getFromProperties("medications_repository"))
+      val medCxn = medRepository.getConnection()
+
+      GraphDbConnection.setMedRepoManager(medRepoManager)
+      GraphDbConnection.setMedRepository(medRepository)
+      GraphDbConnection.setMedConnection(medCxn)
+
+      val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      ontRepoManager.initialize()
+      val ontRepository = ontRepoManager.getRepository(getFromProperties("ontology_repository"))
+      val ontCxn = ontRepository.getConnection()
+
+      GraphDbConnection.setOntRepoManager(ontRepoManager)
+      GraphDbConnection.setOntRepository(ontRepository)
+      GraphDbConnection.setOntConnection(ontCxn)
+  }
+  override def afterAll()
+  {
+      super.afterAll()
+      
+      /*val neo4jgraph = Neo4jGraphConnection.getGraph()
+      neo4jgraph.close()*/
+
+      val diagRepoManager = GraphDbConnection.getDiagRepoManager()
+      val diagRepository = GraphDbConnection.getDiagRepository()
+      val diagCxn = GraphDbConnection.getDiagConnection()
+
+      val medRepoManager = GraphDbConnection.getMedRepoManager()
+      val medRepository = GraphDbConnection.getMedRepository()
+      val medCxn = GraphDbConnection.getMedConnection()
+
+      val ontRepoManager = GraphDbConnection.getOntRepoManager()
+      val ontRepository = GraphDbConnection.getOntRepository()
+      val ontCxn = GraphDbConnection.getOntConnection()
+
+      diagCxn.close()
+      diagRepository.shutDown()
+      diagRepoManager.shutDown()
+
+      medCxn.close()
+      medRepository.shutDown()
+      medRepoManager.shutDown()
+
+      ontCxn.close()
+      ontRepository.shutDown()
+      ontRepoManager.shutDown()
+  }
 
   test("GET / on dashboardServlet should return status 200") 
   {
     get("/") 
     {
-      status should equal (200)
+      assert(status == 200)
     }
   }
   
@@ -24,7 +103,7 @@ class dashboardServletTests extends ScalatraFunSuite {
   
   test("POST /diagnoses/getICDCodesFromDiseaseURI with params")
   {
-      val res = post("/diagnoses/getICDCodesFromDiseaseURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/MONDO_0004992\"}")
+      val res = post("/diagnoses/getICDCodesFromDiseaseURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/MONDO_0004992\",\"filterMethod\":\"LEAF\"}")
       {
         status should equal (200)
       }
@@ -46,41 +125,49 @@ class dashboardServletTests extends ScalatraFunSuite {
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup with params")
+  test("POST /diagnoses/diagnosisTextSearch with params")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{\"searchTerm\":\"diabetes\"}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{\"searchTerm\":\"diabetes\"}")
       {
         status should equal (200)
       }
   }
 
-  test("POST /diagnoses/luceneDiagLookup no params")
+  test("POST /diagnoses/diagnosisTextSearch no params")
   {
-      val res = post("/diagnoses/luceneDiagLookup")
+      val res = post("/diagnoses/diagnosisTextSearch")
       {
         status should equal (400)
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup bad params")
+  test("POST /diagnoses/diagnosisTextSearch bad params")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{bad_param}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{bad_param}")
       {
         status should equal (400)
       }
   }
   
-  test("POST /diagnoses/luceneDiagLookup params with no results")
+  test("POST /diagnoses/diagnosisTextSearch params with no results")
   {
-      val res = post("/diagnoses/luceneDiagLookup", "{\"searchTerm\":\"not_a_disease\"}")
+      val res = post("/diagnoses/diagnosisTextSearch", "{\"searchTerm\":\"not_a_disease\"}")
       {
         status should equal (204)
+      }
+  }
+
+  test("POST /diagnoses/getSemanticContextForDiseaseURIs with params")
+  {
+      val res = post("/diagnoses/getSemanticContextForDiseaseURIs", "{\"searchList\":[\"http://purl.obolibrary.org/obo/MONDO_0005002\",\"http://purl.obolibrary.org/obo/MONDO_0011751\"]}")
+      {
+        status should equal (200)
       }
   }
   
   test("POST /medications/findOrderNamesFromInputURI with params")
   {
-      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchTerm\":\"http://purl.obolibrary.org/obo/CHEBI_35480\"}")
+      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_6942\"]}")
       {
         status should equal (200)
       }
@@ -101,66 +188,34 @@ class dashboardServletTests extends ScalatraFunSuite {
         status should equal (400)
       }
   }
-  
-  test("POST /medications/luceneMedLookup with params")
+
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes bad params")
   {
-      val res = post("/medications/luceneMedLookup", "{\"searchTerm\":\"analgesic\"}")
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{bad_param}")
+      {
+        status should equal (400)
+      }
+  }
+
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes with params")
+  {
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes", "{\"searchList\":[\"http://purl.bioontology.org/ontology/ICD9CM/285.9\", \"http://purl.bioontology.org/ontology/ICD10CM/E00\", \"http://purl.bioontology.org/ontology/ICD9CM/103.9\"],\"filterMethod\":\"LEAF\"}")
       {
         status should equal (200)
       }
   }
   
-  test("POST /medications/luceneMedLookup no params")
+  test("POST /diagnoses/getDiseaseURIsFromICDCodes no params")
   {
-      val res = post("/medications/luceneMedLookup")
+      val res = post("/diagnoses/getDiseaseURIsFromICDCodes")
       {
         status should equal (400)
       }
   }
-  
-  test("POST /medications/luceneMedLookup params with no results")
+
+  test("POST /ontologies/getOmopConceptMap")
   {
-      val res = post("/medications/luceneMedLookup", "{\"searchTerm\":\"not_a_med\"}")
-      {
-        status should equal (204)
-      }
-  }
-  
-  test("POST /medications/luceneMedLookup bad params")
-  {
-      val res = post("/medications/luceneMedLookup", "{bad_param}")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug with params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_23888\"]}")
-      {
-        status should equal (200)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug no params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("POST /medications/findHopsAwayFromDrug bad params")
-  {
-      val res = post("/medications/findHopsAwayFromDrug", "{bad_param}")
-      {
-        status should equal (400)
-      }
-  }
-  
-  test("GET /medications/lastGraphUpdate")
-  {
-      val res = get("/medications/lastGraphUpdate")
+      val res = post("/ontologies/getOmopConceptMap")
       {
         status should equal (200)
       }

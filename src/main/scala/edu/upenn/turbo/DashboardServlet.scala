@@ -27,56 +27,79 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.model.Value
 import org.eclipse.rdf4j.model.IRI
 import org.eclipse.rdf4j.rio.RDFFormat
+
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
 import com.fasterxml.jackson.core.JsonParseException
-import java.util.Properties
-import java.io.FileInputStream
-import org.eclipse.rdf4j.repository.RepositoryConnection
+import com.fasterxml.jackson.databind.JsonMappingException
+
+import org.slf4j.LoggerFactory
+
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
+import java.io.File
+
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
-import com.fasterxml.jackson.databind.JsonMappingException
 
-import scala.collection.mutable.ArrayBuffer
-
-case class FullNameResults(mappedInputTerm: String, resultsList: Array[String])
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
-case class FullNameInput(searchTerm: String)
-case class LuceneMedResults(searchTerm: String, luceneResults: Array[String])
-case class LuceneDiagResults(searchTerm: String, luceneResults: Array[String])
-case class DrugClassInputs(searchList: Array[String])
-case class DrugResults(resultsList: Map[String, Array[String]])
+case class MedFullNameInput(searchList: Array[String])
+case class MedFullNameResults(resultsMap: HashMap[String, ArrayBuffer[String]])
+case class MedicationFreeText(searchTerm: String)
+case class DiagnosisFreeText(searchTerm: String)
+case class DiagnosisTermInput(searchTerm: String, filterMethod: String)
+case class OmopConceptIdInput(searchTerm: String)
+case class OmopConceptIdUri(result: String)
+case class OmopConceptMap(result: Map[String, String])
+case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
+case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
+case class DrugClassInputs(searchList: Array[String], filterMethod: String)
+case class SemanticContextDrugInput(searchList: Array[String])
+case class DiagnosisPathways(resultsList: Array[String])
+case class DrugHopsResults(resultsList: Map[String, Array[String]])
+case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
+case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
+case class ListOfStringToStringHashMapsResult(resultsList: Array[HashMap[String,String]])
 
-class DashboardServlet extends ScalatraServlet with JacksonJsonSupport 
+class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 {
   val graphDB: GraphDBConnector = new GraphDBConnector
+<<<<<<< HEAD
   val neo4j: Neo4jConnector = new Neo4jConnector
   val cache: CacheOperations = new CacheOperations
+=======
+  /*val neo4j: Neo4jConnector = new Neo4jConnector()
+  val neo4jgraph = Neo4jGraphConnection.getGraph()*/
+  val diagCxn = GraphDbConnection.getDiagConnection()
+  val medCxn = GraphDbConnection.getMedConnection()
+  val ontCxn = GraphDbConnection.getOntConnection()
+
+  val logger = LoggerFactory.getLogger("turboAPIlogger")
+
+>>>>>>> master
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
       contentType = formats("json")
   }
 
-  post("/diagnoses/getICDCodesFromDiseaseURI")
+  post("/diagnoses/getDiseaseURIsFromICDCodes")
   {
-      println("Received a post request")
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
-      var neo4jgraph: Neo4jGraph = null
-      var parsedResult: String = null
-
+      logger.info("Received a post request")
+      var parsedResult: Array[String] = null
+      var filterMethod: String = null
       try 
       { 
           val userInput = request.body
-          println("received: " + userInput)
-          val extractedResult = parse(userInput).extract[FullNameInput]
-          parsedResult = extractedResult.searchTerm
-          println("extracted search term")
+          logger.info("received: " + userInput)
+          val extractedResult = parse(userInput).extract[DrugClassInputs]
+          parsedResult = extractedResult.searchList
+          filterMethod = extractedResult.filterMethod
+          logger.info("extracted search term")
 
+<<<<<<< HEAD
           val requestType = "diseaseToICD"
           val cacheFileName = requestType + "_" + parsedResult.split("/")(4)
 
@@ -87,10 +110,56 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               println("Found up-to-date cache data for this search")
               FullNameResults(parsedResult, cache.getResults(cacheFileIfExists.get))
           }
+=======
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
           else
           {
               try
               {
+                  val res = graphDB.getDiseaseURIs(parsedResult, filterMethod, diagCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else ListOfStringToStringHashMapsResult(res)
+              }
+              catch
+              {
+                  case e: RuntimeException => 
+                  {
+                      println(e.toString)
+                      InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  }
+              }
+          }
+      } 
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
+  post("/diagnoses/getSemanticContextForDiseaseURIs")
+  {
+      logger.info("Received a post request")
+      var parsedResult: Array[String] = null
+      try 
+      { 
+          val userInput = request.body
+          logger.info("received: " + userInput)
+          val extractedResult = parse(userInput).extract[SemanticContextDrugInput]
+          parsedResult = extractedResult.searchList
+          logger.info("extracted search term")
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
+>>>>>>> master
+          else
+          {
+              try
+              {
+<<<<<<< HEAD
                   println("Did not find up-to-date cache file for this search")
                   repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
                   repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
@@ -114,6 +183,19 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                   repoManager.shutDown()
                   println("Connections closed.")
                   println()
+=======
+                  val res = graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else TwoDimensionalArrListResults(res)
+              }
+              catch
+              {
+                  case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+>>>>>>> master
               }
           }
       } 
@@ -125,17 +207,18 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/medications/findOrderNamesFromInputURI")
+  post("/diagnoses/getICDCodesFromDiseaseURI")
   {
-      println("Received a post request")
-      var neo4jgraph: Neo4jGraph = null
+      logger.info("Received a post request")
       var parsedResult: String = null
-
+      var filterMethod: String = null
       try 
       { 
           val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
+          logger.info("received: " + userInput)
+          val extractedResult = parse(userInput).extract[DiagnosisTermInput]
           parsedResult = extractedResult.searchTerm
+<<<<<<< HEAD
           println("Input class: " + parsedResult)
 
           val requestType = "medToOrderName"
@@ -174,6 +257,28 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                   println("Connections closed.")
                   println()
               }
+=======
+          filterMethod = extractedResult.filterMethod
+          logger.info("extracted search term")
+
+          try
+          { 
+              val res = graphDB.getDiagnosisCodes(parsedResult, filterMethod, diagCxn)
+              if (res.size == 0)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else ListOfStringToStringHashMapsResult(res)
+          }
+          catch
+          {
+              case e: RuntimeException => 
+              {
+                println(e.toString)
+                InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+              }
+>>>>>>> master
           }
       } 
       catch 
@@ -184,220 +289,155 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  post("/medications/luceneMedLookup")
+  post("/medications/findOrderNamesFromInputURI")
   {
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
-      var parsedResult: String = null
-
-      try 
-      { 
-          val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
-          parsedResult = extractedResult.searchTerm
-          try
-          {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("medications_repository"))
-              cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
-            
-              val topResults = getBestMatchTermForMedicationLookup(cxn, parsedResult, 10)
-              if (topResults == None)
-              {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
-              }
-              else
-              {
-                  var luceneResAsStrings = new ArrayBuffer[String]
-                  for (a <- topResults.get)
-                  {
-                     val strToAdd = "IRI: " + a(0) + ", label: " + a(1).replaceAll("@en", "").replaceAll("\"", "")
-                     luceneResAsStrings += strToAdd
-                  }
-                  LuceneMedResults(parsedResult, luceneResAsStrings.toArray)
-              }
-          }
-          finally
-          {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              println("Connections closed.")
-              println()
-          }
-      }
-      catch 
-      {
-          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
-      }
-  }
-
-  post("/diagnoses/luceneDiagLookup")
-  {
-      var cxn: RepositoryConnection = null
-      var repository: Repository = null
-      var repoManager: RemoteRepositoryManager = null
-      var parsedResult: String = null
-
-      try 
-      { 
-          val userInput = request.body
-          val extractedResult = parse(userInput).extract[FullNameInput]
-          parsedResult = extractedResult.searchTerm
-          try
-          {
-              repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-              repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-              repoManager.initialize()
-              repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-              cxn = repository.getConnection()
-              println("Successfully connected to triplestore")
-            
-              val topResults = getBestMatchTermForDiagnosisLookup(cxn, parsedResult, 10)
-              if (topResults == None)
-              {
-                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                  NoContent(Map("message" -> noContentMessage))
-              }
-              else
-              {
-                  var luceneResAsStrings = new ArrayBuffer[String]
-                  for (a <- topResults.get)
-                  {
-                     val strToAdd = "IRI: " + a(0) + ", label: " + a(1).replaceAll("@en", "").replaceAll("\"", "")
-                     luceneResAsStrings += strToAdd
-                  }
-                  LuceneDiagResults(parsedResult, luceneResAsStrings.toArray)
-              }
-          }
-          finally
-          {
-              cxn.close()
-              repository.shutDown()
-              repoManager.shutDown()
-              println("Connections closed.")
-              println()
-          }
-      }
-      catch 
-      {
-          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
-          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
-      }
-  }
-  
-  def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
-  {
-      val query = """
-          PREFIX : <http://www.ontotext.com/connectors/lucene#>
-          PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-          SELECT ?entity ?score ?label {
-              ?search a inst:role_via_rdfs_or_skos_label ;
-                      :query "role_via_rdfs_label:"""+userInput+""" OR role_via_skos_label:"""+userInput+"""" ;
-                                                         :entities ?entity .
-              ?entity :score ?score .
-              {
-                  {
-                      graph <http://data.bioontology.org/ontologies/RXNORM/submissions/15/download> 
-                      {
-                          ?entity skos:prefLabel ?label .
-                      }
-                  }
-                  union
-                  {
-                      graph <ftp://ftp.ebi.ac.uk/pub/databases/chebi/ontology/chebi_lite.owl.gz>
-                      {
-                          ?entity rdfs:label ?label .
-                      }
-                  }
-              }
-          }
-          order by desc(?score)
-          limit 
-      """ + limit
-
-      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-      while (tupleQueryResult.hasNext()) 
-      {
-          val nextResult = tupleQueryResult.next
-          val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-          buffResults += singleResult
-      }
-      if (buffResults.size != 0) Some(buffResults)
-      else None
-  }
-
-  def getBestMatchTermForDiagnosisLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =
-  {
-      val query = """
-          PREFIX : <http://www.ontotext.com/connectors/lucene#>
-          PREFIX inst: <http://www.ontotext.com/connectors/lucene/instance#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-          SELECT ?entity ?score ?label {
-              ?search a inst:MONDO_labelsAndSynonyms ;
-                      :query "mondoLabel:"""+userInput+""" OR mondoExactSynonym:"""+userInput+"""" ;
-                                                 :entities ?entity .
-              ?entity :score ?score .
-              ?entity rdfs:label ?label .
-          }
-          order by desc(?score)
-          limit """ + limit
-
-      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      var buffResults = new ArrayBuffer[ArrayBuffer[String]]
-      while (tupleQueryResult.hasNext()) 
-      {
-          val nextResult = tupleQueryResult.next
-          val singleResult = ArrayBuffer(nextResult.getValue("entity").toString, nextResult.getValue("label").toString)
-          buffResults += singleResult
-      }
-      if (buffResults.size != 0) Some(buffResults)
-      else None
-  }
-
-  get("/medications/lastGraphUpdate")
-  {
-      try 
-      { 
-          println("Checking date of last graph update")
-          val pathStr = "neo4j.graph"
-          val timeRes = Files.readAttributes(Paths.get(pathStr), classOf[BasicFileAttributes]).creationTime.toString.split("T")
-          println(timeRes)
-          val date = timeRes(0)
-          println("date of update: " + date)
-          val time = timeRes(1).split("\\.")(0)
-          println("time of update: " + time)
-          println()
-          GraphUpdateTime(date, time)
-      } 
-      catch 
-      {
-          case e1: NoSuchFileException => InternalServerError(Map("message" -> "Graph file not found"))
-          case e2: Throwable => InternalServerError(Map("message" -> "Unknown server error occurred"))
-      }
-      
-  }
-
-  post("/medications/findHopsAwayFromDrug")
-  {
-      println("Received a post request")
-      var neo4jgraph: Neo4jGraph = null
+      logger.info("Received a post request")
       var parsedResult: Array[String] = null
-
       try 
       { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[MedFullNameInput]
+          parsedResult = extractedResult.searchList
+          logger.info("Input list: " + parsedResult.mkString(", "))
+          if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
+          else
+          {
+              try
+              {
+                  val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn)
+                  if (res.size == 0)
+                  {
+                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                      NoContent(Map("message" -> noContentMessage))
+                  }
+                  else MedFullNameResults(res)
+
+              }
+              catch
+              {
+                  case e: RuntimeException => 
+                  {
+                    logger.info("error:" + e)
+                    InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+                  }
+              }
+          }
+      }
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
+  // We switched to Solr for this service. This request is not updated and will currently not return results for any search term.
+  /*post("/medications/medicationTextSearch")
+  {
+      logger.info("Received a post request")
+      var parsedResult: String = null
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[MedicationFreeText]
+          parsedResult = extractedResult.searchTerm
+          logger.info("search term: " + parsedResult)
+
+          var topResults: Option[ArrayBuffer[ArrayBuffer[String]]] = None
+          try
+          {
+              topResults = graphDB.getBestMatchTermForMedicationLookup(medCxn, parsedResult, 10)
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
+          if (topResults == None)
+          {
+              val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+              NoContent(Map("message" -> noContentMessage))
+          }
+          else
+          {
+              var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
+              for (a <- topResults.get)
+              {
+                 var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                 luceneResAsMaps += tempMap
+              }
+              LuceneMedResults(parsedResult, luceneResAsMaps.toArray)
+          }
+      }
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }*/
+
+  post("/diagnoses/diagnosisTextSearch")
+  {
+      logger.info("Received a post request")
+      var parsedResult: String = null
+      try 
+      { 
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[DiagnosisFreeText]
+          parsedResult = extractedResult.searchTerm
+          logger.info("search term: " + parsedResult)
+          try
+          {
+              val topResults = graphDB.getBestMatchTermForDiagnosisLookup(diagCxn, parsedResult, 10)
+              if (topResults == None)
+              {
+                  val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                  NoContent(Map("message" -> noContentMessage))
+              }
+              else
+              {
+                  var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
+                  for (a <- topResults.get)
+                  {
+                     var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
+                     luceneResAsMaps += tempMap
+                  }
+                  LuceneDiagResults(parsedResult, luceneResAsMaps.toArray)
+              }
+          }
+          catch
+          {
+              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+          }
+      }
+      catch 
+      {
+          case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
+          case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+      }
+  }
+
+  post("/diagnoses/getAllDiagnosisMappingPaths")
+  {
+      logger.info("Received a post request")
+
+      try
+      { 
+          DiagnosisPathways(graphDB.getDiagnosisMappingPathways(diagCxn))
+      }
+      catch
+      {
+          case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+      }
+  }
+
+  post("/ontologies/getOmopConceptMap")
+  {
+      logger.info("Received a post request")
+      try 
+      { 
+<<<<<<< HEAD
           val userInput = request.body
           val extractedResult = parse(userInput).extract[DrugClassInputs]
           parsedResult = extractedResult.searchList
@@ -423,14 +463,22 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               println("Connections closed.")
               println()
           }
+=======
+
+          val res: Map[String, String] = graphDB.getOmopConceptMap(ontCxn)
+          OmopConceptMap(res)
+>>>>>>> master
       } 
       catch 
       {
           case e1: JsonParseException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
+          case e4: NumberFormatException => BadRequest(Map("message" -> "The input receieved was not a valid integer"))
+          case e5: RuntimeException => NoContent(Map("message" -> "Unknown internal server error"))
       }
   }
+<<<<<<< HEAD
   
   def getFromProperties(key: String, file: String = "turboAPI.properties"): String =
   {
@@ -440,4 +488,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
        input.close()
        props.getProperty(key)
   }
+=======
+>>>>>>> master
 }
