@@ -39,7 +39,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import java.io.File
 
-//import com.github.takezoe.solr.scala._
+import com.github.takezoe.solr.scala._
 
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class MedFullNameInput(searchList: Array[String])
@@ -243,7 +243,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
       }
   }
 
-  /*post("/medications/medicationTextSearch")
+  post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
       var parsedResult: String = null
@@ -279,7 +279,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }*/
+  }
 
   post("/diagnoses/diagnosisTextSearch")
   {
