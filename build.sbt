@@ -60,9 +60,9 @@ assemblyMergeStrategy in assembly := {
       (xs map {_.toLowerCase}) match {
     case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") || ps.last.endsWith(".rsa") =>
           MergeStrategy.discard
-    case x => MergeStrategy.deduplicate
+    case x => MergeStrategy.concat
     }
-  case x => MergeStrategy.deduplicate
+  case x => MergeStrategy.first
 }
 
 resolvers += Classpaths.typesafeReleases
