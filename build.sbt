@@ -89,7 +89,7 @@ libraryDependencies ++= Seq(
   //Solr
   "com.github.takezoe" %% "solr-scala-client" % "0.0.24",
 
-  "edu.upenn.pmbb" % "carnival-util" % "0.2.0"
+  //"edu.upenn.pmbb" % "carnival-util" % "0.2.0"
 )
 
 enablePlugins(SbtTwirl)
