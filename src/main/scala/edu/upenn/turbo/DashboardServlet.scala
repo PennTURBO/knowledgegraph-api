@@ -39,7 +39,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import java.io.File
 
-import com.github.takezoe.solr.scala._
+//import com.github.takezoe.solr.scala._
 
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class MedFullNameInput(searchList: Array[String])
