@@ -44,6 +44,46 @@ mediaType: application/json
 						{
 						  "message": "Unable to parse JSON"
 						}
+	/medicationTextSearch:
+    post:
+      queryParameters:
+        displayName: searchTerm
+        type: JSON List
+        description: free text search for drug brand or product names, or drug roles
+        example: {"searchTerm":"analgesic"}
+        required: true
+      responses:
+        200:
+          body:
+  			application/json:
+              example: |
+    						{
+							    "searchTerm": "analgesic",
+							    "searchResults": [
+							        {
+							            "id": "http://purl.obolibrary.org/obo/CHEBI_35480",
+							            "medlabel": [
+							                "analgesic"
+							            ],
+							            "employment": [
+							                "curated_role"
+							            ],
+							            "score": 14.300752639770508
+							        }
+							        ...
+							    ]
+							}
+    	204:
+          	body:
+  			  header:
+  			  	Your input of "not_a_medication" returned no matches.
+		400:
+		  body:
+			application/json:
+			  example:
+				{
+				  "message": "Unable to parse JSON"
+				}
 
 /diagnoses:
 	/diagnosisTextSearch:

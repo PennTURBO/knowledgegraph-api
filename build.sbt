@@ -4,11 +4,7 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   scalaVersion in ThisBuild := "2.11.8",
   test in assembly := {},
-<<<<<<< HEAD
   name := "Turbo-API"
-=======
-  name := "TurboAPI"
->>>>>>> master
 )
 
 val ScalatraVersion = "2.6.3"
@@ -22,11 +18,7 @@ lazy val app = (project in file("app")).
 lazy val utils = (project in file("utils")).
   settings(commonSettings: _*).
   settings(
-<<<<<<< HEAD
-    assemblyJarName in assembly := "turbo-api.jar",
-=======
     assemblyJarName in assembly := "turboAPI.jar",
->>>>>>> master
   )
 
 resolvers += Resolver.mavenLocal
@@ -93,10 +85,9 @@ libraryDependencies ++= Seq(
   "org.eclipse.rdf4j" % "rdf4j-model" % "2.4.0-M1",
   "org.eclipse.rdf4j" % "rdf4j-repository-api" % "2.4.0-M1",
   "org.eclipse.rdf4j" % "rdf4j-repository-manager" % "2.4.0-M1",
-  
-  //Tinkerpop
-  //"org.apache.tinkerpop" % "gremlin-core" % "3.3.1",
-  //"org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.3.1"
+
+  //Solr
+  "com.github.takezoe" %% "solr-scala-client" % "0.0.24",
 
   "edu.upenn.pmbb" % "carnival-util" % "0.2.0"
 )

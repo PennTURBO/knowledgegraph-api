@@ -1,6 +1,12 @@
+# triplestore URL
 serviceURL = http://turbo-prd-db01.pmacs.upenn.edu:7200/
-medications_repository = med_map_support_20180403_boosted_20190426
-diagnoses_repository = Diagnosis_KnowledgeGraph
-ontology_repository = acornUserModel
+# username/password for triplestore
 username = your_username
 password = your_password
+# repository names
+medications_repository = med_mapping_dev
+diagnoses_repository = Diagnosis_KnowledgeGraph
+ontology_repository = acornUserModel
+# solr
+solrURL = http://turbo-prd-app01:8983/
+solrCollection = med_mapping_kb_labels_exp

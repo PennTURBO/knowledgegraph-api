@@ -39,10 +39,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import java.io.File
 
-import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+import com.github.takezoe.solr.scala._
 
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class MedFullNameInput(searchList: Array[String])
@@ -53,7 +50,7 @@ case class DiagnosisTermInput(searchTerm: String, filterMethod: String)
 case class OmopConceptIdInput(searchTerm: String)
 case class OmopConceptIdUri(result: String)
 case class OmopConceptMap(result: Map[String, String])
-case class LuceneMedResults(searchTerm: String, searchResults: Array[Map[String, String]])
+case class SolrMedResults(searchTerm: String, searchResults: List[Map[String, Any]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String], filterMethod: String)
 case class SemanticContextDrugInput(searchList: Array[String])
@@ -63,13 +60,9 @@ case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, 
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 case class ListOfStringToStringHashMapsResult(resultsList: Array[HashMap[String,String]])
 
-class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
+class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with DashboardProperties
 {
   val graphDB: GraphDBConnector = new GraphDBConnector
-<<<<<<< HEAD
-  val neo4j: Neo4jConnector = new Neo4jConnector
-  val cache: CacheOperations = new CacheOperations
-=======
   /*val neo4j: Neo4jConnector = new Neo4jConnector()
   val neo4jgraph = Neo4jGraphConnection.getGraph()*/
   val diagCxn = GraphDbConnection.getDiagConnection()
@@ -78,7 +71,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
 
   val logger = LoggerFactory.getLogger("turboAPIlogger")
 
->>>>>>> master
   protected implicit val jsonFormats: Formats = DefaultFormats
   before()
   {
@@ -99,18 +91,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           filterMethod = extractedResult.filterMethod
           logger.info("extracted search term")
 
-<<<<<<< HEAD
-          val requestType = "diseaseToICD"
-          val cacheFileName = requestType + "_" + parsedResult.split("/")(4)
-
-          val cacheFileIfExists = cache.checkIfCurrentCacheExists(cacheFileName)
-
-          if (cacheFileIfExists != None)
-          {
-              println("Found up-to-date cache data for this search")
-              FullNameResults(parsedResult, cache.getResults(cacheFileIfExists.get))
-          }
-=======
           if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
           else
           {
@@ -154,36 +134,10 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           parsedResult = extractedResult.searchList
           logger.info("extracted search term")
           if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
->>>>>>> master
           else
           {
               try
               {
-<<<<<<< HEAD
-                  println("Did not find up-to-date cache file for this search")
-                  repoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-                  repoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-                  repoManager.initialize()
-                  repository = repoManager.getRepository(getFromProperties("diagnoses_repository"))
-                  cxn = repository.getConnection()
-                  println("Successfully connected to triplestore")
-
-                  val searchRes = graphDB.getDiagnosisCodes(parsedResult, cxn)
-                  cache.writeResults(cacheFileName, searchRes, requestType)
-                  FullNameResults(parsedResult, searchRes)
-              }
-              catch
-              {
-                  case e: RuntimeException => NoContent(Map("message" -> "There was a problem retrieving results from the triplestore."))
-              }
-              finally
-              {
-                  cxn.close()
-                  repository.shutDown()
-                  repoManager.shutDown()
-                  println("Connections closed.")
-                  println()
-=======
                   val res = graphDB.getSemanticContextForDiseaseURIs(parsedResult, diagCxn)
                   if (res.size == 0)
                   {
@@ -195,7 +149,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
               catch
               {
                   case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
->>>>>>> master
               }
           }
       } 
@@ -218,46 +171,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           logger.info("received: " + userInput)
           val extractedResult = parse(userInput).extract[DiagnosisTermInput]
           parsedResult = extractedResult.searchTerm
-<<<<<<< HEAD
-          println("Input class: " + parsedResult)
-
-          val requestType = "medToOrderName"
-          val cacheFileName = requestType + "_" + parsedResult.split("/")(4)
-
-          val cacheFileIfExists = cache.checkIfCurrentCacheExists(cacheFileName)
-
-          if (cacheFileIfExists != None)
-          {
-              println("Found up-to-date cache data for this search")
-              FullNameResults(parsedResult, cache.getResults(cacheFileIfExists.get))
-          }
-          else
-          {
-              println("Did not find up-to-date cache file for this search")
-              try 
-              { 
-                  try 
-                  { 
-                      neo4jgraph = Neo4jGraph.open("neo4j.graph")
-                  } 
-                  catch 
-                  {
-                      case e: Throwable => e.printStackTrace()
-                  }
-                  val g: GraphTraversalSource = neo4jgraph.traversal()
-                  println("Successfully connected to property graph")
-
-                  val searchRes = neo4j.getOrderNames(parsedResult, g)
-                  cache.writeResults(cacheFileName, searchRes, requestType)
-                  FullNameResults(parsedResult, searchRes)
-              }
-              finally
-              {
-                  neo4jgraph.close()
-                  println("Connections closed.")
-                  println()
-              }
-=======
           filterMethod = extractedResult.filterMethod
           logger.info("extracted search term")
 
@@ -278,7 +191,6 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
                 println(e.toString)
                 InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
               }
->>>>>>> master
           }
       } 
       catch 
@@ -331,8 +243,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       }
   }
 
-  // We switched to Solr for this service. This request is not updated and will currently not return results for any search term.
-  /*post("/medications/medicationTextSearch")
+  post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
       var parsedResult: String = null
@@ -343,30 +254,24 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           parsedResult = extractedResult.searchTerm
           logger.info("search term: " + parsedResult)
 
-          var topResults: Option[ArrayBuffer[ArrayBuffer[String]]] = None
-          try
-          {
-              topResults = graphDB.getBestMatchTermForMedicationLookup(medCxn, parsedResult, 10)
+          val solrClient = new SolrClient(getFromProperties("solrURL"))
+          println("solrClient:"+getFromProperties("solrURL"))
+          println("collection:"+getFromProperties("solrCollection"))
+          val results = solrClient.query(s"medlabel:$parsedResult")
+                        .collection("solr/"+getFromProperties("solrCollection"))
+                        .fields("medlabel", "id", "employment", "score")
+                        .getResultAsMap(Map("medlabel" -> "medorder"))
+            println("resultsSize:"+results.numFound)
+            results.documents.foreach { doc: Map[String, Any] =>
+              for ((k,v) <- doc) println(s"k:$k v:$v")
           }
-          catch
-          {
-              case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
-          }
-          if (topResults == None)
+
+          if (results.documents.size == 0)
           {
               val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
               NoContent(Map("message" -> noContentMessage))
           }
-          else
-          {
-              var luceneResAsMaps = new ArrayBuffer[Map[String, String]]
-              for (a <- topResults.get)
-              {
-                 var tempMap = Map("IRI" -> a(0), "label" -> a(1).replaceAll("@en", "").replaceAll("\"", ""))
-                 luceneResAsMaps += tempMap
-              }
-              LuceneMedResults(parsedResult, luceneResAsMaps.toArray)
-          }
+          else SolrMedResults(parsedResult, results.documents)
       }
       catch 
       {
@@ -374,7 +279,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }*/
+  }
 
   post("/diagnoses/diagnosisTextSearch")
   {
@@ -437,37 +342,9 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
       logger.info("Received a post request")
       try 
       { 
-<<<<<<< HEAD
-          val userInput = request.body
-          val extractedResult = parse(userInput).extract[DrugClassInputs]
-          parsedResult = extractedResult.searchList
-          println("Input class: " + parsedResult)
-          try 
-          { 
-              try 
-              { 
-                  neo4jgraph = Neo4jGraph.open("neo4j.graph")
-              } 
-              catch 
-              {
-                  case e: Throwable => e.printStackTrace()
-              }
-              val g: GraphTraversalSource = neo4jgraph.traversal()
-              println("Successfully connected to property graph")
-            
-              DrugResults(neo4j.getHopsAwayFromDrug(parsedResult, g))
-          }
-          finally
-          {
-              neo4jgraph.close()
-              println("Connections closed.")
-              println()
-          }
-=======
 
           val res: Map[String, String] = graphDB.getOmopConceptMap(ontCxn)
           OmopConceptMap(res)
->>>>>>> master
       } 
       catch 
       {
@@ -478,16 +355,4 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport
           case e5: RuntimeException => NoContent(Map("message" -> "Unknown internal server error"))
       }
   }
-<<<<<<< HEAD
-  
-  def getFromProperties(key: String, file: String = "turboAPI.properties"): String =
-  {
-       val input: FileInputStream = new FileInputStream(file)
-       val props: Properties = new Properties()
-       props.load(input)
-       input.close()
-       props.getProperty(key)
-  }
-=======
->>>>>>> master
 }

@@ -1,4 +1,4 @@
-package edu.upenn.turbo
+/*package edu.upenn.turbo
 
 import org.scalatra.test.scalatest._
 
@@ -10,3 +10,4 @@ class CacheOperationsSpec extends ScalatraFunSuite
       cache.getAllFilesWithMatchingPrefix("diseaseToICD_cancer")
   }
 }
+*/

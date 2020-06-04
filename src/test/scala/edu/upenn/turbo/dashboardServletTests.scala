@@ -167,7 +167,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   
   test("POST /medications/findOrderNamesFromInputURI with params")
   {
-      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_6942\"]}")
+      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_35480\"]}")
       {
         status should equal (200)
       }
@@ -178,6 +178,30 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val res = post("/medications/findOrderNamesFromInputURI")
       {
         status should equal (400)
+      }
+  }
+
+  test("POST /medications/medicationTextSearch no params")
+  {
+      val res = post("/medications/medicationTextSearch")
+      {
+        status should equal (400)
+      }
+  }
+
+  test("POST /medications/medicationTextSearch with params")
+  {
+      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"analgesic\"}")
+      {
+        status should equal (200)
+      }
+  }
+
+  test("POST /medications/medicationTextSearch bad params")
+  {
+      val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"not_a_med\"}")
+      {
+        status should equal (204)
       }
   }
   
