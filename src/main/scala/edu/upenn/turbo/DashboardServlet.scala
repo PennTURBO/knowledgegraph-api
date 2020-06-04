@@ -243,7 +243,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
       }
   }
 
-  post("/medications/medicationTextSearch")
+  /*post("/medications/medicationTextSearch")
   {
       logger.info("Received a post request")
       var parsedResult: String = null
@@ -279,7 +279,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
           case e2: MappingException => BadRequest(Map("message" -> "Unable to parse JSON"))
           case e3: JsonMappingException => BadRequest(Map("message" -> "Did not receive any content in the request body"))
       }
-  }
+  }*/
 
   post("/diagnoses/diagnosisTextSearch")
   {
