@@ -249,19 +249,23 @@ class GraphDBConnector
                 query = bindingset.getValue("query").toString
                 assert (!tqr.hasNext(), s"Multiple queries found for employment $employment")
             }
-            var startListAsString = ""
-            for (med <- termList) startListAsString += " <" + med + "> "
-            query = query.replaceAll("values \\?query_input \\{}", "values ?query_input {"+startListAsString+"}")
-                 .stripPrefix("\"").stripSuffix("\"")
-            //println(query)
-            val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-            while (tupleQueryResult.hasNext()) 
+            if (query == "") logger.info(s"No query found for employment $employment")
+            else
             {
-                val bindingset: BindingSet = tupleQueryResult.next()
-                var fullName: String = bindingset.getValue("source_full_name").toString
-                var start: String = bindingset.getValue("query_input").toString
-                if (resultMap.contains(start)) resultMap(start) += fullName
-                else resultMap += start -> ArrayBuffer(fullName)
+                var startListAsString = ""
+                for (med <- termList) startListAsString += " <" + med + "> "
+                query = query.replaceAll("values \\?query_input \\{}", "values ?query_input {"+startListAsString+"}")
+                     .stripPrefix("\"").stripSuffix("\"")
+                //println(query)
+                val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+                while (tupleQueryResult.hasNext()) 
+                {
+                    val bindingset: BindingSet = tupleQueryResult.next()
+                    var fullName: String = bindingset.getValue("source_full_name").toString
+                    var start: String = bindingset.getValue("query_input").toString
+                    if (resultMap.contains(start)) resultMap(start) += fullName
+                    else resultMap += start -> ArrayBuffer(fullName)
+                }
             }
         }
         logger.info("result size: " + resultMap.size)
