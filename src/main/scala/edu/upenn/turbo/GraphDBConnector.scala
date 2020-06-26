@@ -221,161 +221,51 @@ class GraphDBConnector
         resultList.toArray
     }
 
-    def getMedicationFullNameResults(startList: Array[String], cxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
+    def getMedicationFullNameResults(startList: Map[String,Array[String]], cxn: RepositoryConnection, medMapCxn: RepositoryConnection): HashMap[String, ArrayBuffer[String]] =
     {
-        var startListAsString = ""
-        for (med <- startList) startListAsString += " <" + med + "> "
-        val query = s"""
-
-        PREFIX mydata: <http://example.com/resource/>
-        PREFIX obo: <http://purl.obolibrary.org/obo/>
-        PREFIX rxnorm: <http://purl.bioontology.org/ontology/RXNORM/>
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-        select 
-        distinct ?start ?source_full_name
-        where {
-            values ?start {
-                $startListAsString
-            }
+        val resultMap = new HashMap[String, ArrayBuffer[String]]
+        for ((employment, termList) <- startList)
+        {
+            // first get the appropriate query to run based on employment
+            val getQuery = s"""
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            select
+            ?notation ?employment ?query
+            where {
+                values ?notation {"$employment"}
+                graph <https://raw.githubusercontent.com/PennTURBO/med_mapping/master/tmm_ontology/tmm_ontology.ttl> {
+                    ?SPARQL a <http://transformunify.org/ontologies/TURBO_0022058> ;
+                       <http://purl.org/dc/dcam/domainIncludes> ?employment ;
+                       <http://transformunify.org/ontologies/TURBO_0022020> ?query .
+                    ?employment skos:notation ?notation
+                }
+            }"""
+            println(getQuery)
+            val tqr = medMapCxn.prepareTupleQuery(QueryLanguage.SPARQL, getQuery).evaluate()
+            var query = ""
+            while (tqr.hasNext()) 
             {
-                values ?role_employment {
-                    mydata:curated_role
-                }
-                values ?role_definer {
-                    obo:chebi.owl
-                }
-                graph mydata:employment {
-                    ?start mydata:employment ?role_employment .
-                }
-                graph mydata:defined_in {
-                    ?start mydata:defined_in ?role_definer .
-                }
-                graph mydata:transitive_role_of_class {
-                    ?solr_mediri mydata:transitive_role_of_class ?start .
-                }
-                values ?source_employment {
-                    mydata:active_ingredient
-                }
-                values ?mapped_rxn_employment {
-                    <http://example.com/resource/rxn_tty/IN>
-                }
-                values ?source_definer {
-                    obo:chebi.owl
-                }
-                graph mydata:employment {
-                    ?solr_mediri mydata:employment ?source_employment .
-                }
-                graph mydata:defined_in {
-                    ?solr_mediri mydata:defined_in ?source_definer .
-                }
-                # for ChEBI/DrOn ingredient to rxnorm ingredient:
-                #   union together direct BioPortal mappings
-                #   with assertions from DrOn
-                {
-                    {
-                        graph mydata:bioportal_mapping {
-                            ?solr_mediri mydata:bioportal_mapping ?mapped_rxn
-                        }
-                    } union {
-                        graph ?g {
-                            ?dronprod mydata:transitively_materialized_dron_ingredient ?solr_mediri
-                        }
-                        # add triples patterns about the ?dronprod's definer and employment?
-                        graph mydata:bioportal_mapping {
-                            ?dronprod mydata:bioportal_mapping ?mapped_rxn
-                        }
-                    }
-                }
-                graph mydata:employment {
-                    ?mapped_rxn mydata:employment ?mapped_rxn_employment .
-                }
-                graph mydata:defined_in {
-                    ?mapped_rxn mydata:defined_in rxnorm: .
-                }
-                graph rxnorm: {
-                    ?mapped_rxn  (rxnorm:constitutes|rxnorm:contained_in|rxnorm:has_dose_form|rxnorm:has_doseformgroup|rxnorm:has_form|rxnorm:has_tradename|rxnorm:ingredient_of|rxnorm:ingredients_of|rxnorm:isa|rxnorm:part_of|rxnorm:precise_ingredient_of|rxnorm:quantified_form_of|rxnorm:reformulation_of)* ?rxnprod .
-                }
-                # find orders for the bare ingredient or products containing the ingredient
-                # probably won't find orders for a bare brand name
-                {
-                    {
-                        graph mydata:elected_mapping {
-                            ?order mydata:elected_mapping ?mapped_rxn .
-                        }
-                    } union {
-                        graph mydata:elected_mapping {
-                            ?order mydata:elected_mapping ?rxnprod .
-                        }
-                    }
-                }
-                # get properties of the order
-                graph mydata:reference_medications {
-                    ?order a obo:PDRO_0000024 ;
-                           mydata:source_full_name ?source_full_name .
-                }
-                graph mydata:source_med_id  {
-                    ?order skos:notation ?order_id .
-                }
+                val bindingset: BindingSet = tqr.next()
+                query = bindingset.getValue("query").toString
+                assert (!tqr.hasNext(), s"Multiple queries found for employment $employment")
             }
-            UNION
+            var startListAsString = ""
+            for (med <- termList) startListAsString += " <" + med + "> "
+            query = query.replaceAll("values \\?query_input \\{}", "values ?query_input {"+startListAsString+"}")
+                 .stripPrefix("\"").stripSuffix("\"")
+            //println(query)
+            val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
+            while (tupleQueryResult.hasNext()) 
             {
-                # the next two constraints can be applied in the SPARQL query, or could be ensured by some upstream logic
-                values ?rxemployment {
-                    <http://example.com/resource/rxn_tty/IN>
-                }
-                graph mydata:employment {
-                    ?start mydata:employment ?rxemployment .
-                }
-                values ?source_definer {
-                    rxnorm:
-                }
-                graph mydata:defined_in {
-                    ?start mydata:defined_in ?source_definer .
-                }
-                # this is the "away from ingredient" RxNorm predicate whitelist
-                graph rxnorm: {
-                    ?start  (rxnorm:constitutes|rxnorm:contained_in|rxnorm:has_dose_form|rxnorm:has_doseformgroup|rxnorm:has_form|rxnorm:has_tradename|rxnorm:ingredient_of|rxnorm:ingredients_of|rxnorm:isa|rxnorm:part_of|rxnorm:precise_ingredient_of|rxnorm:quantified_form_of|rxnorm:reformulation_of)* ?rxnprod .
-                }
-                # find orders for the bare ingredient or products containing the ingredient
-                # probably won't find orders for a bare brand name
-                {
-                    {
-                        graph mydata:elected_mapping {
-                            ?order mydata:elected_mapping ?start .
-                        }
-                    } union {
-                        graph mydata:elected_mapping {
-                            ?order mydata:elected_mapping ?rxnprod .
-                        }
-                    }
-                }
-                # get properties of the order
-                graph mydata:reference_medications {
-                    ?order a obo:PDRO_0000024 ;
-                           mydata:source_full_name ?source_full_name .
-                }
-                graph mydata:source_med_id  {
-                    ?order skos:notation ?order_id .
-                }
+                val bindingset: BindingSet = tupleQueryResult.next()
+                var fullName: String = bindingset.getValue("source_full_name").toString
+                var start: String = bindingset.getValue("query_input").toString
+                if (resultMap.contains(start)) resultMap(start) += fullName
+                else resultMap += start -> ArrayBuffer(fullName)
             }
         }
-      """
-      //println(query)
-      val tupleQueryResult = cxn.prepareTupleQuery(QueryLanguage.SPARQL, query).evaluate()
-      val resultMap = new HashMap[String, ArrayBuffer[String]]
-      while (tupleQueryResult.hasNext()) 
-      {
-          val bindingset: BindingSet = tupleQueryResult.next()
-          var fullName: String = bindingset.getValue("source_full_name").toString
-          var start: String = bindingset.getValue("start").toString
-          if (resultMap.contains(start)) resultMap(start) += fullName
-          else resultMap += start -> ArrayBuffer(fullName)
-      }
-
-      logger.info("result size: " + resultMap.size)
-      resultMap
+        logger.info("result size: " + resultMap.size)
+        resultMap
     }
 
     def getBestMatchTermForMedicationLookup(cxn: RepositoryConnection, userInput: String, limit: Integer = 1): Option[ArrayBuffer[ArrayBuffer[String]]] =

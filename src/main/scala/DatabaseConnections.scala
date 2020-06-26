@@ -31,6 +31,10 @@ object GraphDbConnection
     var ontRepo: Repository = null
     var ontRepoManager: RemoteRepositoryManager = null
 
+    var medMapCxn: RepositoryConnection = null
+    var medMapRepo: Repository = null
+    var medMapRepoManager: RemoteRepositoryManager = null
+
 	def setDiagConnection(diagCxn: RepositoryConnection)
     {
         this.diagCxn = diagCxn
@@ -93,4 +97,25 @@ object GraphDbConnection
     }
     
     def getOntRepoManager(): RemoteRepositoryManager = ontRepoManager
+
+    def setMedMapConnection(medMapCxn: RepositoryConnection)
+    {
+        this.medMapCxn = medMapCxn
+    }
+    
+    def getMedMapConnection(): RepositoryConnection = medMapCxn
+    
+    def setMedMapRepository(medMapRepo: Repository)
+    {
+        this.medMapRepo = medMapRepo
+    }
+    
+    def getMedMapRepository(): Repository = medMapRepo
+    
+    def setMedMapRepoManager(medMapRepoManager: RemoteRepositoryManager)
+    {
+        this.medMapRepoManager = medMapRepoManager
+    }
+    
+    def getMedMapRepoManager(): RemoteRepositoryManager = medMapRepoManager
 }

@@ -8,9 +8,14 @@ import org.eclipse.rdf4j.repository.RepositoryConnection
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
 import org.apache.tinkerpop.gremlin.neo4j.structure.Neo4jGraph
 
+import org.eclipse.rdf4j.query.BindingSet
+import org.eclipse.rdf4j.query.QueryLanguage
+import scala.collection.mutable.HashMap
+
 class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with DashboardProperties {
 
   addServlet(classOf[DashboardServlet], "/*")
+  var medMapCxn: RepositoryConnection = null
 
   override def beforeAll()
   {
@@ -52,6 +57,16 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setOntRepoManager(ontRepoManager)
       GraphDbConnection.setOntRepository(ontRepository)
       GraphDbConnection.setOntConnection(ontCxn)
+
+      val medMapRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+      medMapRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+      medMapRepoManager.initialize()
+      val medMapRepository = medMapRepoManager.getRepository(getFromProperties("medMap_ontology_repository"))
+      medMapCxn = medMapRepository.getConnection()
+
+      GraphDbConnection.setMedMapRepoManager(medMapRepoManager)
+      GraphDbConnection.setMedMapRepository(medMapRepository)
+      GraphDbConnection.setMedMapConnection(medMapCxn)
   }
   override def afterAll()
   {
@@ -72,6 +87,10 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val ontRepository = GraphDbConnection.getOntRepository()
       val ontCxn = GraphDbConnection.getOntConnection()
 
+      val medMapRepoManager = GraphDbConnection.getMedMapRepoManager()
+      val medMapRepository = GraphDbConnection.getMedMapRepository()
+      val medMapCxn = GraphDbConnection.getMedMapConnection()
+
       diagCxn.close()
       diagRepository.shutDown()
       diagRepoManager.shutDown()
@@ -83,6 +102,10 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       ontCxn.close()
       ontRepository.shutDown()
       ontRepoManager.shutDown()
+
+      medMapCxn.close()
+      medMapRepository.shutDown()
+      medMapRepoManager.shutDown()
   }
 
   test("GET / on dashboardServlet should return status 200") 
@@ -167,7 +190,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   
   test("POST /medications/findOrderNamesFromInputURI with params")
   {
-      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":[\"http://purl.obolibrary.org/obo/CHEBI_35480\"]}")
+      val res = post("/medications/findOrderNamesFromInputURI", "{\"searchList\":{\"active_ingredient\":[\"http://purl.obolibrary.org/obo/CHEBI_116735\"], \"curated_role\":[\"http://purl.obolibrary.org/obo/CHEBI_36047\"]}}")
       {
         status should equal (200)
       }
@@ -202,6 +225,64 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\"not_a_med\"}")
       {
         status should equal (204)
+      }
+  }
+
+  test("medication text search QC from TMM Ontology")
+  {
+      val expectedResultsQuery = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        select 
+        ?solrQueryExample (group_CONCAT(distinct ?solrKeyword;
+                SEPARATOR="|") as ?keywords) (group_CONCAT(distinct str( ?expectedSolrResult) ;
+                SEPARATOR="|") as ?expected)
+        where {
+            ?solrQueryExample a <http://transformunify.org/ontologies/TURBO_0022059> ;
+                              rdfs:seeAlso ?applicable_emp ;
+                              rdfs:label ?qlab ;
+                              <http://transformunify.org/ontologies/TURBO_0022062> ?solrKeyword ;
+                              <http://transformunify.org/ontologies/TURBO_0022061> ?expectedSolrResult .
+            ?applicable_emp a ?t .
+            optional {
+                ?applicable_emp rdfs:label ?apemplab .
+            }
+            ?t rdfs:subClassOf <http://transformunify.org/ontologies/TURBO_0022023> .
+        }
+        group by ?solrQueryExample
+      """
+      val tupleQueryResult = medMapCxn.prepareTupleQuery(QueryLanguage.SPARQL, expectedResultsQuery).evaluate()
+      var resultMap = new HashMap[String, String]
+      while (tupleQueryResult.hasNext()) 
+      {
+          val bindingset: BindingSet = tupleQueryResult.next()
+          var keywords = bindingset.getValue("keywords").toString
+          var expectedResults = bindingset.getValue("expected").toString
+          assert (!resultMap.contains(keywords), s"Duplicate keyword found in query result: $keywords")
+          resultMap += keywords -> expectedResults
+      }
+      for ((keywords, expectedResults) <- resultMap)
+      {
+          var keywordList = keywords.split("\\|")
+          var expectedResultsList = expectedResults.split("\\|")
+          for (keyword <- keywordList)
+          {
+              var keywordNoQuotes = keyword
+              if (keywordNoQuotes.charAt(0) == '"') keywordNoQuotes = keywordNoQuotes.substring(1)
+              if (keywordNoQuotes.charAt(keywordNoQuotes.length-1) == '"') keywordNoQuotes = keywordNoQuotes.substring(0, keywordNoQuotes.length-1)
+              println("searching term: " + keywordNoQuotes)
+              val res = post("/medications/medicationTextSearch", "{\"searchTerm\":\""+keywordNoQuotes+"\"}")
+              {
+                 status should equal (200)
+                 for (expectedResult <- expectedResultsList)
+                 {
+                    var erNoQuotes = expectedResult
+                    if (erNoQuotes.charAt(0) == '"') erNoQuotes = erNoQuotes.substring(1)
+                    if (erNoQuotes.charAt(erNoQuotes.length-1) == '"') erNoQuotes = erNoQuotes.substring(0, erNoQuotes.length-1)
+                    println("expecting: " + erNoQuotes)
+                    body should include (erNoQuotes)
+                 }
+              }
+          }
       }
   }
   

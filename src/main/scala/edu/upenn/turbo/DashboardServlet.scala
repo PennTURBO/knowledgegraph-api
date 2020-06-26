@@ -38,11 +38,13 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import java.io.File
+import java.util.ArrayList
 
-import com.github.takezoe.solr.scala._
+import org.apache.solr.client.solrj._
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
-case class MedFullNameInput(searchList: Array[String])
+case class MedFullNameInput(searchList: Map[String, Array[String]])
 case class MedFullNameResults(resultsMap: HashMap[String, ArrayBuffer[String]])
 case class MedicationFreeText(searchTerm: String)
 case class DiagnosisFreeText(searchTerm: String)
@@ -50,7 +52,7 @@ case class DiagnosisTermInput(searchTerm: String, filterMethod: String)
 case class OmopConceptIdInput(searchTerm: String)
 case class OmopConceptIdUri(result: String)
 case class OmopConceptMap(result: Map[String, String])
-case class SolrMedResults(searchTerm: String, searchResults: List[Map[String, Any]])
+case class SolrMedResults(searchTerm: String, searchResults: List[Map[String, String]])
 case class LuceneDiagResults(searchTerm: String, searchResults: Array[Map[String, String]])
 case class DrugClassInputs(searchList: Array[String], filterMethod: String)
 case class SemanticContextDrugInput(searchList: Array[String])
@@ -63,11 +65,11 @@ case class ListOfStringToStringHashMapsResult(resultsList: Array[HashMap[String,
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with DashboardProperties
 {
   val graphDB: GraphDBConnector = new GraphDBConnector
-  /*val neo4j: Neo4jConnector = new Neo4jConnector()
-  val neo4jgraph = Neo4jGraphConnection.getGraph()*/
+
   val diagCxn = GraphDbConnection.getDiagConnection()
   val medCxn = GraphDbConnection.getMedConnection()
   val ontCxn = GraphDbConnection.getOntConnection()
+  val medMapCxn = GraphDbConnection.getMedMapConnection()
 
   val logger = LoggerFactory.getLogger("turboAPIlogger")
 
@@ -204,35 +206,22 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
   post("/medications/findOrderNamesFromInputURI")
   {
       logger.info("Received a post request")
-      var parsedResult: Array[String] = null
+      var parsedResult: Map[String, Array[String]] = null
       try 
-      { 
+      {
           val userInput = request.body
           val extractedResult = parse(userInput).extract[MedFullNameInput]
           parsedResult = extractedResult.searchList
-          logger.info("Input list: " + parsedResult.mkString(", "))
           if (parsedResult.size == 0) BadRequest(Map("message" -> "Unable to parse JSON"))
           else
           {
-              try
-              {
-                  val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn)
-                  if (res.size == 0)
-                  {
-                      val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
-                      NoContent(Map("message" -> noContentMessage))
-                  }
-                  else MedFullNameResults(res)
-
-              }
-              catch
-              {
-                  case e: RuntimeException => 
-                  {
-                    logger.info("error:" + e)
-                    InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
-                  }
-              }
+            val res = graphDB.getMedicationFullNameResults(parsedResult, medCxn, medMapCxn)
+            if (res.size == 0)
+            {
+                val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
+                NoContent(Map("message" -> noContentMessage))
+            }
+            else MedFullNameResults(res)
           }
       }
       catch 
@@ -247,31 +236,42 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
   {
       logger.info("Received a post request")
       var parsedResult: String = null
-      try 
-      { 
+      try
+      {
           val userInput = request.body
           val extractedResult = parse(userInput).extract[MedicationFreeText]
           parsedResult = extractedResult.searchTerm
           logger.info("search term: " + parsedResult)
 
-          val solrClient = new SolrClient(getFromProperties("solrURL"))
-          println("solrClient:"+getFromProperties("solrURL"))
-          println("collection:"+getFromProperties("solrCollection"))
-          val results = solrClient.query(s"medlabel:$parsedResult")
-                        .collection("solr/"+getFromProperties("solrCollection"))
-                        .fields("medlabel", "id", "employment", "score")
-                        .getResultAsMap(Map("medlabel" -> "medorder"))
-            println("resultsSize:"+results.numFound)
-            results.documents.foreach { doc: Map[String, Any] =>
-              for ((k,v) <- doc) println(s"k:$k v:$v")
-          }
+          val connectionString = getFromProperties("solrURL")+"solr/"+getFromProperties("solrCollection")
+          println(s"connecting to $connectionString")
+          val solrClient = new HttpSolrClient.Builder(connectionString).build()
+          val solrQuery = new SolrQuery()
+          solrQuery.set("q", parsedResult)
+          solrQuery.set("defType", "edismax")
+          solrQuery.set("qf", "medlabel tokens")
+          solrQuery.set("fl", "id medlabel score employment")
+          val response = solrClient.query(solrQuery)
+          val results = response.getResults()
+          println("results size: " + results.getNumFound())
 
-          if (results.documents.size == 0)
+          val resList: ArrayBuffer[Map[String, String]] = new ArrayBuffer[Map[String, String]]()
+          for (i <- 0 to results.size()-1)
+          {
+              println("result: " + results.get(i))
+              val thisMap = new HashMap[String, String]
+              thisMap += "medlabel" -> results.get(i).getFieldValue("medlabel").asInstanceOf[ArrayList[String]].get(0)
+              thisMap += "id" -> results.get(i).getFieldValue("id").asInstanceOf[String]
+              thisMap += "employment" -> results.get(i).getFieldValue("employment").asInstanceOf[ArrayList[String]].get(0)
+              thisMap += "score" -> results.get(i).getFieldValue("score").asInstanceOf[Float].toString
+              resList += thisMap.toMap
+          }
+          if (results.getNumFound() == 0)
           {
               val noContentMessage = "Your input of \"" + parsedResult + "\" returned no matches."
               NoContent(Map("message" -> noContentMessage))
           }
-          else SolrMedResults(parsedResult, results.documents)
+          else SolrMedResults(parsedResult, resList.toList)
       }
       catch 
       {

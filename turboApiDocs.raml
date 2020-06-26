@@ -12,31 +12,12 @@ mediaType: application/json
         displayName: searchList
         type: JSON List
         description: list of CHEBI or RxNorm URIs representing a drug role, drug generic name, or drug brand name
-        example: {"searchList":["http://purl.obolibrary.org/obo/CHEBI_71940","http://purl.obolibrary.org/obo/CHEBI_6942"]}
+        example: {"searchList":{"active_ingredient":["http://purl.obolibrary.org/obo/CHEBI_116735"], "curated_role":["http://purl.obolibrary.org/obo/CHEBI_36047"]}}
         required: true
       responses:
         200:
           body:
   				application/json:
-              example: |
-    						{
-    							"resultsMap": {
-    								"http://purl.obolibrary.org/obo/CHEBI_6942": [
-    									"\"MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
-    									"\"MINOXIDIL 2 % EX SOLN\"",
-    									"\"PX MINOXIDIL FOR WOMEN EX\"",
-    									"\"PX MINOXIDIL FOR WOMEN 2 % EX SOLN\"",
-    									"\"PX MINOXIDIL FOR MEN EX\"",
-    									...
-    									],
-    								"http://purl.obolibrary.org/obo/CHEBI_71940": [
-    									"\"tadalafil 20 mg oral tablet 2 tabs QD\"",
-    									"\"Adcirca 20 mg oral tablet\"",
-    									"\"Cialis\"",
-    									...
-    									]
-    							}
-    						}
 				400:
 				  body:
 					application/json:

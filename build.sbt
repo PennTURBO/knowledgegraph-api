@@ -87,7 +87,8 @@ libraryDependencies ++= Seq(
   "org.eclipse.rdf4j" % "rdf4j-repository-manager" % "2.4.0-M1",
 
   //Solr
-  "com.github.takezoe" %% "solr-scala-client" % "0.0.24",
+  //"com.github.takezoe" %% "solr-scala-client" % "0.0.24",
+  "org.apache.solr" % "solr-solrj" % "8.5.2",
 
   //"edu.upenn.pmbb" % "carnival-util" % "0.2.0"
 )

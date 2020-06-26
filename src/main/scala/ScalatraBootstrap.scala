@@ -35,6 +35,10 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
       val ontRepository = GraphDbConnection.getOntRepository()
       val ontCxn = GraphDbConnection.getOntConnection()
 
+      val medMapRepoManager = GraphDbConnection.getMedMapRepoManager()
+      val medMapRepository = GraphDbConnection.getMedMapRepository()
+      val medMapCxn = GraphDbConnection.getMedMapConnection()
+
       diagCxn.close()
       diagRepository.shutDown()
       diagRepoManager.shutDown()
@@ -46,6 +50,10 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
       ontCxn.close()
       ontRepository.shutDown()
       ontRepoManager.shutDown()
+
+      medMapCxn.close()
+      medMapRepository.shutDown()
+      medMapRepoManager.shutDown()
   }
 
   override def init(context: ServletContext) {
@@ -102,6 +110,19 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     GraphDbConnection.setOntConnection(ontCxn)
 
     println("established connection to ontologies repository")
+
+    val medMapRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+    ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+    ontRepoManager.initialize()
+    val medMapRepository = medMapRepoManager.getRepository(getFromProperties("medMap_ontology_repository"))
+    val medMapCxn = medMapRepository.getConnection()
+
+    GraphDbConnection.setMedMapRepoManager(medMapRepoManager)
+    GraphDbConnection.setMedMapRepository(medMapRepository)
+    GraphDbConnection.setMedMapConnection(medMapCxn)
+
+    println("established connection to medMap repository")
+
     println("established all graph db connections")
 
     context.mount(new DashboardServlet, "/*")
