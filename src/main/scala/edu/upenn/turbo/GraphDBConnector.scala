@@ -21,7 +21,7 @@ import org.eclipse.rdf4j.model.Statement
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
-
+ 
 import org.eclipse.rdf4j.query.QueryEvaluationException
 
 import java.nio.file.Path
