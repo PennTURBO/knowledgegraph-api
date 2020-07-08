@@ -27,7 +27,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException
 import java.nio.file.Path
 import java.nio.file.Paths
 import org.slf4j.LoggerFactory
-
+ 
 class GraphDBConnector 
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")
