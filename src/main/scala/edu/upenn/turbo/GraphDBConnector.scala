@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory
 class GraphDBConnector 
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")
- 
+
     def getDiseaseURIs(startingCodes: Array[String], filterMethod: String, cxn: RepositoryConnection): Array[HashMap[String,String]] =
     {
         var graphName = "pmbb:cached_mondo_icd_mappings"
