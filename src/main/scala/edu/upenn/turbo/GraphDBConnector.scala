@@ -27,7 +27,7 @@ import org.eclipse.rdf4j.query.QueryEvaluationException
 import java.nio.file.Path
 import java.nio.file.Paths
 import org.slf4j.LoggerFactory
- 
+
 class GraphDBConnector 
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")
@@ -233,12 +233,10 @@ class GraphDBConnector
             ?notation ?employment ?query
             where {
                 values ?notation {"$employment"}
-                graph <https://raw.githubusercontent.com/PennTURBO/med_mapping/master/tmm_ontology/tmm_ontology.ttl> {
-                    ?SPARQL a <http://transformunify.org/ontologies/TURBO_0022058> ;
-                       <http://purl.org/dc/dcam/domainIncludes> ?employment ;
-                       <http://transformunify.org/ontologies/TURBO_0022020> ?query .
-                    ?employment skos:notation ?notation
-                }
+                ?SPARQL a <http://transformunify.org/ontologies/TURBO_0022058> ;
+                   <http://purl.org/dc/dcam/domainIncludes> ?employment ;
+                   <http://transformunify.org/ontologies/TURBO_0022020> ?query .
+                ?employment skos:notation ?notation
             }"""
             println(getQuery)
             val tqr = medMapCxn.prepareTupleQuery(QueryLanguage.SPARQL, getQuery).evaluate()
