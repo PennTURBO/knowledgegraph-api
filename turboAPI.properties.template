@@ -4,8 +4,8 @@ serviceURL = http://turbo-prd-db01.pmacs.upenn.edu:7200/
 username = your_username
 password = your_password
 # repository names
-medications_repository = med_mapping_dev
-diagnoses_repository = Diagnosis_KnowledgeGraph
+medications_repository = medication_knowledgegraph
+diagnoses_repository = diagnosis-knowledgegraph
 ontology_repository = TurboOntology
 medMap_ontology_repository = MedicationMappingOntology
 # solr
