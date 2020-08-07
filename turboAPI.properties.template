@@ -9,5 +9,5 @@ diagnoses_repository = Diagnosis_KnowledgeGraph
 ontology_repository = TurboOntology
 medMap_ontology_repository = MedicationMappingOntology
 # solr
-solrURL = http://turbo-prd-app01:8983/
-solrCollection = med_mapping_kb_labels_exp
+solrURL = http://turbo-prd-app02:8983/
+solrCollection = medication-employment-labels
