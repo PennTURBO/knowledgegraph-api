@@ -55,7 +55,7 @@ pipeline {
                 branch 'master'
             }
             steps {
-                build 'Turbo-API deploy turbo-dev-app01'
+                build 'Turbo-API deploy turbo-dev-app02'
             }
         }
         stage('Deploy to Prd Server') {
@@ -63,7 +63,7 @@ pipeline {
                 branch 'production'
             }
             steps {
-                build 'Turbo-API deploy turbo-prd-app01'
+                build 'Turbo-API deploy turbo-prd-app02'
             }
         }
     }
