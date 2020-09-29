@@ -1,9 +1,9 @@
-# Dashboard REST API #
+# PennTurbo Knowledgegraph REST API #
 
-REST API for communication between various TURBO components
+REST API server for communication with resources produced by the knolwedgegraph Pipelines
 
 ## Installation ##
-Turbo-API is a Scala project that can either be run locally through SBT (Scala Build Tool), or run in a docker container.
+knowledgegraph-api is a Scala project that can either be run locally through SBT (Scala Build Tool), or run in a docker container.
 
 ### Requirements ###
 #### Local
