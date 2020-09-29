@@ -27,7 +27,7 @@ Copy `turboAPI.properties.template` to `turboAPI.properties`.  Update passwords 
 
 ### Local Build & Run ###
 ```sh
-$ cd Turbo-API
+$ cd knowledgegraph-api
 $ sbt
 > jetty:start
 ```
