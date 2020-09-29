@@ -1,4 +1,4 @@
-# PennTurbo Knowledgegraph REST API #
+# PennTurbo Knowledgegraph API #
 
 REST API server for communication with resources produced by the knolwedgegraph Pipelines
 
@@ -25,27 +25,28 @@ Copy `turboAPI.properties.template` to `turboAPI.properties`.  Update passwords 
 
 ## Build & Run ##
 
-### Local Start ###
+### Local Build & Run ###
 ```sh
 $ cd Turbo-API
 $ sbt
 > jetty:start
 ```
 
-### Docker Build ###
+### Docker ###
+#### Build
 ```
 docker-compose build
 ```
 
 
-### Docker Start ###
+#### Run
 ```
 docker-compose up
 ```
 
 This runs `sbt ~"jetty:start"` in the context of a docker container.  May take several minutes to compile.
 
-### General Use ###
+## General Use ##
 
 For free text lookup, send POST JSON to "http://localhost:8080/medications/findOrderNamesFromInputString"
 
@@ -62,7 +63,7 @@ Note that when running from SBT the default port is 8080, as a precompiled .jar 
 See dashboardApiDocs.raml for more explicit documentation.
 
 
-### Tests ###
+## Tests ##
 The test suite can be run localy with the command `sbt test` or via docker with the command `docker-compose -f docker-compose-unit-test.yml up`.
 
 See [ScalaTest documentation](http://www.scalatest.org/user_guide/using_scalatest_with_sbt) for details.
