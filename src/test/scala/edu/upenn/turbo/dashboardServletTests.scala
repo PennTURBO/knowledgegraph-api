@@ -12,10 +12,14 @@ import org.eclipse.rdf4j.query.BindingSet
 import org.eclipse.rdf4j.query.QueryLanguage
 import scala.collection.mutable.HashMap
 
+import org.apache.solr.client.solrj._
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+
 class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with DashboardProperties {
 
   addServlet(classOf[DashboardServlet], "/*")
   var medMapCxn: RepositoryConnection = null
+  var solrConnectionString: String = null
 
   override def beforeAll()
   {
@@ -28,6 +32,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
 
       println("connecting to graph db...")
 
+      println("connecting to diagnoses_repository")
       val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
       diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
       diagRepoManager.initialize()
@@ -37,7 +42,9 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setDiagRepoManager(diagRepoManager)
       GraphDbConnection.setDiagRepository(diagRepository)
       GraphDbConnection.setDiagConnection(diagCxn)
+      println("connected")
 
+      println("connecting to medications_repository")
       val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
       medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
       medRepoManager.initialize()
@@ -48,6 +55,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setMedRepository(medRepository)
       GraphDbConnection.setMedConnection(medCxn)
 
+      println("connecting to ontology_repository")
       val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
       ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
       ontRepoManager.initialize()
@@ -58,6 +66,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setOntRepository(ontRepository)
       GraphDbConnection.setOntConnection(ontCxn)
 
+      println("connecting to medMap_ontology_repository")
       val medMapRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
       medMapRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
       medMapRepoManager.initialize()
@@ -67,6 +76,9 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       GraphDbConnection.setMedMapRepoManager(medMapRepoManager)
       GraphDbConnection.setMedMapRepository(medMapRepository)
       GraphDbConnection.setMedMapConnection(medMapCxn)
+
+      println ("getting solr connection string")
+      solrConnectionString = getFromProperties("solrURL")+"solr/"+getFromProperties("solrCollection")
   }
   override def afterAll()
   {
@@ -228,7 +240,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
 
-  test("medication text search QC from TMM Ontology")
+  test("medication text search QC from TMM Ontology POST /medications/medicationTextSearch")
   {
       val expectedResultsQuery = """
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -324,5 +336,23 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       {
         status should equal (200)
       }
+  }
+
+  test("Medication SOLR query")
+  {
+      println(s"connecting to solr at '$solrConnectionString'")
+      
+      val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
+      val solrQuery = new SolrQuery()
+      solrQuery.set("q", "analgesic")
+      solrQuery.set("defType", "edismax")
+      solrQuery.set("qf", "medlabel tokens")
+      solrQuery.set("fl", "id medlabel score employment")
+      val response = solrClient.query(solrQuery)
+      val results = response.getResults()
+      println("results size: " + results.getNumFound())
+
+      assert(results.getNumFound() >= 1)
+
   }
 }
