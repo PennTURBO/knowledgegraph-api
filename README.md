@@ -64,7 +64,7 @@ See dashboardApiDocs.raml for more explicit documentation.
 
 
 ## Tests ##
-The test suite can be run localy with the command `sbt test` or via docker with the command `docker-compose -f docker-compose-unit-test.yml up`.
+The integration test suite can be run localy with the command `sbt test` or via docker with the command `docker-compose -f docker-compose-int-test.yml up`.
 
 See [ScalaTest documentation](http://www.scalatest.org/user_guide/using_scalatest_with_sbt) for details.
 
