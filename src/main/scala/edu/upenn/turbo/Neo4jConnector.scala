@@ -17,6 +17,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import org.slf4j.LoggerFactory
 
+// unused. possibly remove.
 class Neo4jConnector 
 {
     val logger = LoggerFactory.getLogger("turboAPIlogger")

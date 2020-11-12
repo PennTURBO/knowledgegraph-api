@@ -348,18 +348,27 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
 
   test("Medication SOLR query")
   {
-      println(s"connecting to solr at '$solrConnectionString'")
+      try {
+        println(s"connecting to solr at '$solrConnectionString'")
+        val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
+        val solrQuery = new SolrQuery()
+        solrQuery.set("q", "analgesic")
+        solrQuery.set("defType", "edismax")
+        solrQuery.set("qf", "medlabel tokens")
+        solrQuery.set("fl", "id medlabel score employment")
+        val response = solrClient.query(solrQuery)
+        val results = response.getResults()
+        assert(results.getNumFound() >= 1)
 
-      val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
-      val solrQuery = new SolrQuery()
-      solrQuery.set("q", "analgesic")
-      solrQuery.set("defType", "edismax")
-      solrQuery.set("qf", "medlabel tokens")
-      solrQuery.set("fl", "id medlabel score employment")
-      val response = solrClient.query(solrQuery)
-      val results = response.getResults()
-      println("results size: " + results.getNumFound())
+        println("results size: " + results.getNumFound())
 
-      assert(results.getNumFound() >= 1)
+      } catch {
+        case e: RuntimeException => 
+          {
+            println("ERROR: exception when initilizing solr connection")
+            println(e.toString)
+            throw e
+          }
+      }
   }
 }
