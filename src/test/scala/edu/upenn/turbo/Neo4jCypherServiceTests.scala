@@ -13,7 +13,27 @@ class Neo4jCypherServiceTests extends ScalatraFunSuite with BeforeAndAfterAll wi
   override def beforeAll()
   {
       super.beforeAll()
-      cypherService = new Neo4jCypherService()
+
+      try {
+	      cypherService = new Neo4jCypherService(
+	      	getFromProperties("neo4j_url"), 
+	      	getFromProperties("neo4j_username"), 
+	      	getFromProperties("neo4j_password")
+	      )
+      } catch {
+        case e: RuntimeException => 
+          {
+            println("ERROR: exception when initilizing neo4j driver in Neo4jCypherServiceTests.beforeAll() - ")
+            println(e.toString)
+            throw e
+          }
+      }
+  }
+
+  override def afterAll()
+  {
+      super.afterAll()
+      cypherService.close()
   }
 
   test("getDiseaseContextGraphMl good") 
@@ -28,5 +48,15 @@ class Neo4jCypherServiceTests extends ScalatraFunSuite with BeforeAndAfterAll wi
       res should include(expectedInclude)
       res should include(iri)
       res should startWith(expectedStart)
+  }
+
+  test("generateDiseaseContextGraphCypher good") 
+  {
+  		var iri = ""
+
+  		var res = cypherService.generateDiseaseContextGraphCypher(iri)
+
+  		res should include(iri)
+  		res should include("apoc.export")
   }
 }

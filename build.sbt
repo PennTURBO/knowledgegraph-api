@@ -90,6 +90,9 @@ libraryDependencies ++= Seq(
   //"com.github.takezoe" %% "solr-scala-client" % "0.0.24",
   "org.apache.solr" % "solr-solrj" % "8.5.2",
 
+  // Neo4j Cypher Rest 
+  "org.neo4j.driver" % "neo4j-java-driver" % "4.1.1"
+
   //"edu.upenn.pmbb" % "carnival-util" % "0.2.0"
 )
 
