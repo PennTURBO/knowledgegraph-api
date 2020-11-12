@@ -33,8 +33,8 @@ pipeline {
                         sh "sed -i 's/password = your_password/password = $graphDbPassword/g' turboAPI.properties"
                     }
                     withCredentials([usernamePassword(credentialsId: 'neo4j_turbo_kb', usernameVariable: 'neo4jUserName', passwordVariable: 'neo4jPassword')]) {
-                        sh "sed -i 's/neo4j_username = your_username/neo4j_username = $neo4jUserName/g' turboAPI.properties"
-                        sh "sed -i 's/neo4j_password = your_password/neo4j_password = $neo4jPassword/g' turboAPI.properties"
+                        sh "sed -i 's/neo4j_username = neo4j_username/neo4j_username = $neo4jUserName/g' turboAPI.properties"
+                        sh "sed -i 's/neo4j_password = neo4j_password/neo4j_password = $neo4jPassword/g' turboAPI.properties"
                     }
                 }
             }
