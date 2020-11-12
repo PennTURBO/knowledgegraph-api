@@ -30,54 +30,62 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val neo4jgraph = Neo4jGraph.open("neo4j.graph")
       Neo4jGraphConnection.setGraph(neo4jgraph)*/
 
-      println("connecting to graph db...")
+      println("connecting to graphDb repositories...")
 
-      println("connecting to diagnoses_repository")
-      val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-      diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-      diagRepoManager.initialize()
-      val diagRepository = diagRepoManager.getRepository(getFromProperties("diagnoses_repository"))
-      val diagCxn = diagRepository.getConnection()
+      try { 
+        println("connecting to diagnoses_repository")
+        val diagRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+        diagRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+        diagRepoManager.initialize()
+        val diagRepository = diagRepoManager.getRepository(getFromProperties("diagnoses_repository"))
+        val diagCxn = diagRepository.getConnection()
 
-      GraphDbConnection.setDiagRepoManager(diagRepoManager)
-      GraphDbConnection.setDiagRepository(diagRepository)
-      GraphDbConnection.setDiagConnection(diagCxn)
-      println("connected")
+        GraphDbConnection.setDiagRepoManager(diagRepoManager)
+        GraphDbConnection.setDiagRepository(diagRepository)
+        GraphDbConnection.setDiagConnection(diagCxn)
 
-      println("connecting to medications_repository")
-      val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-      medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-      medRepoManager.initialize()
-      val medRepository = medRepoManager.getRepository(getFromProperties("medications_repository"))
-      val medCxn = medRepository.getConnection()
+        println("connecting to medications_repository")
+        val medRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+        medRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+        medRepoManager.initialize()
+        val medRepository = medRepoManager.getRepository(getFromProperties("medications_repository"))
+        val medCxn = medRepository.getConnection()
 
-      GraphDbConnection.setMedRepoManager(medRepoManager)
-      GraphDbConnection.setMedRepository(medRepository)
-      GraphDbConnection.setMedConnection(medCxn)
+        GraphDbConnection.setMedRepoManager(medRepoManager)
+        GraphDbConnection.setMedRepository(medRepository)
+        GraphDbConnection.setMedConnection(medCxn)
 
-      println("connecting to ontology_repository")
-      val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-      ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-      ontRepoManager.initialize()
-      val ontRepository = ontRepoManager.getRepository(getFromProperties("ontology_repository"))
-      val ontCxn = ontRepository.getConnection()
+        println("connecting to ontology_repository")
+        val ontRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+        ontRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+        ontRepoManager.initialize()
+        val ontRepository = ontRepoManager.getRepository(getFromProperties("ontology_repository"))
+        val ontCxn = ontRepository.getConnection()
 
-      GraphDbConnection.setOntRepoManager(ontRepoManager)
-      GraphDbConnection.setOntRepository(ontRepository)
-      GraphDbConnection.setOntConnection(ontCxn)
+        GraphDbConnection.setOntRepoManager(ontRepoManager)
+        GraphDbConnection.setOntRepository(ontRepository)
+        GraphDbConnection.setOntConnection(ontCxn)
 
-      println("connecting to medMap_ontology_repository")
-      val medMapRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
-      medMapRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
-      medMapRepoManager.initialize()
-      val medMapRepository = medMapRepoManager.getRepository(getFromProperties("medMap_ontology_repository"))
-      medMapCxn = medMapRepository.getConnection()
+        println("connecting to medMap_ontology_repository")
+        val medMapRepoManager = new RemoteRepositoryManager(getFromProperties("serviceURL"))
+        medMapRepoManager.setUsernameAndPassword(getFromProperties("username"), getFromProperties("password"))
+        medMapRepoManager.initialize()
+        val medMapRepository = medMapRepoManager.getRepository(getFromProperties("medMap_ontology_repository"))
+        medMapCxn = medMapRepository.getConnection()
 
-      GraphDbConnection.setMedMapRepoManager(medMapRepoManager)
-      GraphDbConnection.setMedMapRepository(medMapRepository)
-      GraphDbConnection.setMedMapConnection(medMapCxn)
+        GraphDbConnection.setMedMapRepoManager(medMapRepoManager)
+        GraphDbConnection.setMedMapRepository(medMapRepository)
+        GraphDbConnection.setMedMapConnection(medMapCxn)
+      } catch {
+        case e: RuntimeException => 
+          {
+            println("ERROR: exception when initilizing graphDb connections in DashboardServletTests.beforeAll() - ")
+            println(e.toString)
+            throw e
+          }
+      }
 
-      println ("getting solr connection string")
+      println ("generating solr connection string")
       solrConnectionString = getFromProperties("solrURL")+"solr/"+getFromProperties("solrCollection")
   }
   override def afterAll()
@@ -341,7 +349,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("Medication SOLR query")
   {
       println(s"connecting to solr at '$solrConnectionString'")
-      
+
       val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
       val solrQuery = new SolrQuery()
       solrQuery.set("q", "analgesic")
@@ -353,6 +361,5 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       println("results size: " + results.getNumFound())
 
       assert(results.getNumFound() >= 1)
-
   }
 }
