@@ -3,6 +3,7 @@ package edu.upenn.turbo
 import org.scalatra.test.scalatest._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest._
+import org.scalatest.OptionValues._
 
 
 class Neo4jCypherServiceTests extends ScalatraFunSuite with BeforeAndAfterAll with DashboardProperties
@@ -45,18 +46,39 @@ class Neo4jCypherServiceTests extends ScalatraFunSuite with BeforeAndAfterAll wi
 
   	  var res = cypherService.getDiseaseContextGraphMl(iri)
       
-      res should include(expectedInclude)
-      res should include(iri)
-      res should startWith(expectedStart)
+      res.value should include(expectedInclude)
+      res.value should include(iri)
+      res.value should startWith(expectedStart)
+  }
+
+  test("getDiseaseContextGraphMl malformed url") 
+  {
+      var iri = "http:!??!//purl.obolibrary.org/obo/MONDO_0005149"
+
+      val caught =
+        intercept[IllegalArgumentException] {
+          cypherService.getDiseaseContextGraphMl(iri)
+        }
+      caught.getMessage should include("is not a correctly formed MONDO url")
+  }
+
+  test("getDiseaseContextGraphMl no results") 
+  {
+      var iri = "http://purl.obolibrary.org/obo/MONDO_NOTREAL"
+
+      var res = cypherService.getDiseaseContextGraphMl(iri)
+      assert(res == None)
   }
 
   test("generateDiseaseContextGraphCypher good") 
   {
-  		var iri = ""
+  		var iri = "http://purl.obolibrary.org/obo/MONDO_0005149"
 
   		var res = cypherService.generateDiseaseContextGraphCypher(iri)
 
   		res should include(iri)
   		res should include("apoc.export")
   }
+
+
 }

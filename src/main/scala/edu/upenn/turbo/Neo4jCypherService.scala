@@ -22,10 +22,16 @@ class Neo4jCypherService(var uri: String, var user: String, var password: String
 
 	Return a graphML formatted subgraph that shows how to get from the given 
 	MONDO uri to the nodes that contain icd 9 or 10 codes.
+
+	Will throw 'org.neo4j.driver.exceptions.ServiceUnavailableException' if the 
+	neo4j server cannot be accessed.
+
+	Will throw an IllegalArgumentException if the uri string is misformed.
 	*/
-    def getDiseaseContextGraphMl(uri: String): String =
+    def getDiseaseContextGraphMl(uri: String): Option[String] =
     {
     	logger.info(s"getDiseaseContextGraphMl($uri)")
+    	require(uri.startsWith("http://purl.obolibrary.org/obo/"), s"'$uri' is not a correctly formed MONDO url")
 
     	try {
 	    	val cypher = generateDiseaseContextGraphCypher(uri)
@@ -39,7 +45,10 @@ class Neo4jCypherService(var uri: String, var user: String, var password: String
 	    	logger.info(s"query result relationships: ${record.get("relationships").asObject()}")
 	    	logger.info(s"query result properties: ${record.get("properties").asObject()}")
 
-	    	return record.get("data").asString()
+
+	    	if (record.get("nodes").asInt() == 0) return None
+	    	else return Some(record.get("data").asString())
+
     	} catch {
     		case e: Exception => 
 	          {
