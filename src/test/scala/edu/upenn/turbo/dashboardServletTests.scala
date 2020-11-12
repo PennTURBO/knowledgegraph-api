@@ -346,6 +346,46 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
 
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with good params") 
+  {
+      val iri = "http://purl.obolibrary.org/obo/MONDO_0005149"
+      val parms = "{\"searchTerm\":\"$iri\"}"
+
+      var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
+      var expectedInclude = """skos__notation"""
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (200)
+        body should include(expectedInclude)
+        body should include(iri)
+        body should startWith(expectedStart)
+      }
+  }
+
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with bad params") 
+  {
+      val iri = "http:???!?//purl.obolibrary.org/obo/MONDO_0005149"
+      val parms = "{\"searchTerm\":\"$iri\"}"
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (400)
+      }
+  }
+
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with parm no results") 
+  {
+      val iri = "http://purl.obolibrary.org/obo/MONDO_NORESULTS"
+      val parms = "{\"searchTerm\":\"$iri\"}"
+
+      var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
+      var expectedInclude = """skos__notation"""
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (200)
+        assert(body.isEmpty)
+      }
+  }
+
   test("Medication SOLR query")
   {
       try {
