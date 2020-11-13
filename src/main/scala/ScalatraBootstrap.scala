@@ -23,6 +23,9 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
       /*val neo4jgraph = Neo4jGraphConnection.getGraph()
       neo4jgraph.close()*/
 
+      Neo4jCypherServiceHolder.getService().close()
+      
+
       val diagRepoManager = GraphDbConnection.getDiagRepoManager()
       val diagRepository = GraphDbConnection.getDiagRepository()
       val diagCxn = GraphDbConnection.getDiagConnection()
@@ -72,6 +75,14 @@ class ScalatraBootstrap extends LifeCycle with DashboardProperties {
     
     println("established neo4j connection")
     Neo4jGraphConnection.setGraph(neo4jgraph)*/
+
+    println("setting up neo4j cypher service...")
+    val neo4jCypherService = new Neo4jCypherService(
+      getFromProperties("neo4j_url"), 
+      getFromProperties("neo4j_username"), 
+      getFromProperties("neo4j_password")
+    ) 
+    Neo4jCypherServiceHolder.setService(neo4jCypherService)
 
     println("connecting to graph db...")
 

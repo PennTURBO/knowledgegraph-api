@@ -79,6 +79,4 @@ class Neo4jCypherServiceTests extends ScalatraFunSuite with BeforeAndAfterAll wi
   		res should include(iri)
   		res should include("apoc.export")
   }
-
-
 }

@@ -30,6 +30,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val neo4jgraph = Neo4jGraph.open("neo4j.graph")
       Neo4jGraphConnection.setGraph(neo4jgraph)*/
 
+      println("setting up neo4j cypher service...")
+      val neo4jCypherService = new Neo4jCypherService(
+        getFromProperties("neo4j_url"), 
+        getFromProperties("neo4j_username"), 
+        getFromProperties("neo4j_password")
+      ) 
+      Neo4jCypherServiceHolder.setService(neo4jCypherService)
+
       println("connecting to graphDb repositories...")
 
       try { 
@@ -94,6 +102,8 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       
       /*val neo4jgraph = Neo4jGraphConnection.getGraph()
       neo4jgraph.close()*/
+
+      Neo4jCypherServiceHolder.getService().close()
 
       val diagRepoManager = GraphDbConnection.getDiagRepoManager()
       val diagRepository = GraphDbConnection.getDiagRepository()
@@ -349,7 +359,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("POST /diagnoses/getGraphMlContextForDiseaseURI with good params") 
   {
       val iri = "http://purl.obolibrary.org/obo/MONDO_0005149"
-      val parms = "{\"searchTerm\":\"$iri\"}"
+      val parms = s"""{"searchTerm":"$iri"}"""
 
       var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
       var expectedInclude = """skos__notation"""
@@ -365,7 +375,7 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("POST /diagnoses/getGraphMlContextForDiseaseURI with bad params") 
   {
       val iri = "http:???!?//purl.obolibrary.org/obo/MONDO_0005149"
-      val parms = "{\"searchTerm\":\"$iri\"}"
+      val parms = s"""{"searchTerm":"$iri"}"""
 
       val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
         status should equal (400)
@@ -375,13 +385,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
   test("POST /diagnoses/getGraphMlContextForDiseaseURI with parm no results") 
   {
       val iri = "http://purl.obolibrary.org/obo/MONDO_NORESULTS"
-      val parms = "{\"searchTerm\":\"$iri\"}"
+      val parms = s"""{"searchTerm":"$iri"}"""
 
       var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
       var expectedInclude = """skos__notation"""
 
       val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
         status should equal (200)
+        //body should include("""{"graphMl":""}""")
         assert(body.isEmpty)
       }
   }

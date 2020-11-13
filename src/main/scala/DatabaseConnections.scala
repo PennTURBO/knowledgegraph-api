@@ -17,6 +17,18 @@ import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager
 	def getGraph(): Neo4jGraph = neo4jgraph
 }*/
 
+object Neo4jCypherServiceHolder
+{
+    var neo4jCypherService: Neo4jCypherService = null
+
+    def setService(neo4jCypherService: Neo4jCypherService)
+    {
+        this.neo4jCypherService = neo4jCypherService
+    }
+
+    def getService(): Neo4jCypherService = neo4jCypherService
+}
+
 object GraphDbConnection
 {
 	var diagCxn: RepositoryConnection = null

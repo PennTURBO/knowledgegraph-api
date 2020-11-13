@@ -21,7 +21,7 @@ class Neo4jCypherService(var uri: String, var user: String, var password: String
 	/** Returns the context graph for a disease URI.
 
 	Return a graphML formatted subgraph that shows how to get from the given 
-	MONDO uri to the nodes that contain icd 9 or 10 codes.
+	MONDO uri to the nodes that contain icd 9 or 10 codes, or None if no results.
 
 	Will throw 'org.neo4j.driver.exceptions.ServiceUnavailableException' if the 
 	neo4j server cannot be accessed.
