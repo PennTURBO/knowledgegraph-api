@@ -17,304 +17,375 @@ mediaType: application/json
       responses:
         200:
           body:
-  				application/json:
-				400:
-				  body:
-					application/json:
-					  example:
-						{
-						  "message": "Unable to parse JSON"
-						}
-	/medicationTextSearch:
-    post:
-      queryParameters:
-        displayName: searchTerm
-        type: JSON List
-        description: free text search for drug brand or product names, or drug roles
-        example: {"searchTerm":"analgesic"}
-        required: true
-      responses:
-        200:
+              application/json:
+        400:
           body:
-  			application/json:
-              example: |
-    						{
-							    "searchTerm": "analgesic",
-							    "searchResults": [
-							        {
-							            "id": "http://purl.obolibrary.org/obo/CHEBI_35480",
-							            "medlabel": [
-							                "analgesic"
-							            ],
-							            "employment": [
-							                "curated_role"
-							            ],
-							            "score": 14.300752639770508
-							        }
-							        ...
-							    ]
-							}
-    	204:
-          	body:
-  			  header:
-  			  	Your input of "not_a_medication" returned no matches.
-		400:
-		  body:
-			application/json:
-			  example:
-				{
-				  "message": "Unable to parse JSON"
-				}
+            application/json:
+              example:
+                {
+                  "message": "Unable to parse JSON"
+                }
+    /medicationTextSearch:
+      post:
+        queryParameters:
+          displayName: searchTerm
+          type: JSON List
+          description: free text search for drug brand or product names, or drug roles
+          example: {"searchTerm":"analgesic"}
+          required: true
+        responses:
+          200:
+            body:
+              application/json:
+                example: |
+                              {
+                                  "searchTerm": "analgesic",
+                                  "searchResults": [
+                                      {
+                                          "id": "http://purl.obolibrary.org/obo/CHEBI_35480",
+                                          "medlabel": [
+                                              "analgesic"
+                                          ],
+                                          "employment": [
+                                              "curated_role"
+                                          ],
+                                          "score": 14.300752639770508
+                                      }
+                                      ...
+                                  ]
+                              }
+          204:
+              body:
+                header:
+                  Your input of "not_a_medication" returned no matches.
+          400:
+            body:
+              application/json:
+                example:
+                  {
+                    "message": "Unable to parse JSON"
+                  }
 
 /diagnoses:
-	/diagnosisTextSearch:
-	post:
-	  queryParameters:
-		freeTextSearchTerm:
-		  displayName: searchTerm
-		  type: JSON String
-		  description: free text input to be mapped to a set of potentially matching ontology disease terms
-		  example: {"searchTerm":"diabetes"}
-		  required: true
-		  repsonses:
-			200:
-			  body:
-				application/json
-				  example:
-					{
-					  "searchTerm": "diabetes",
-					  "searchResults": [
-						  {
-							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
-							"label": "gestational diabetes"
-						  },
-						  {
-							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005015",
-							"label": "diabetes mellitus (disease)"
-						  },
-						  {
-							"IRI": "http://purl.obolibrary.org/obo/MONDO_0005827",
-							"label": "lipoatrophic diabetes"
-						  },
-						...
-						]
-					},
-			204:
-			  header:
-				message:Your input of "notADisease" returned no matches.
-			400:
-			  body:
-				application/json:
-				  example:
-					{
-					  "message": "Unable to parse JSON"
-					}
-	/getICDCodesFromDiseaseURI:
-	post:
-	  queryParameters:
-		URISearchTerm:
-		  displayName: searchTerm
-		  type: JSON String
-		  description: MONDO URI representing a disease
-		  example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992", "filterMethod":"LEAF"}
-		  required: true
-		  responses:
-			200:
-			  body:
-				application/json
-				  example:
-					{
-					    "resultsList": [
-					        {
-					            "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
-					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
-					            "AssertionOrientation": "\"forward\"",
-					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
-					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
-					            "IcdCode": "\"D02.2\"",
-					            "IcdVersion": "\"ICD10\"",
-					            "AssertedPredicate": "http://example.com/resource/mdbxr",
-					            "MondoLabel": "\"bronchus carcinoma in situ\""
-					        },
-					        {
-					            "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
-					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
-					            "AssertionOrientation": "\"forward\"",
-					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
-					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
-					            "IcdCode": "\"D02.2\"",
-					            "IcdVersion": "\"ICD10\"",
-					            "AssertedPredicate": "http://www.w3.org/2002/07/owl#equivalentClass",
-					            "MondoLabel": "\"bronchus carcinoma in situ\""
-					        },
-					    	...
-					    ]
-					}
-			400:
-			  body:
-				application/json:
-				  example:
-				   {
-					 "message": "Unable to parse JSON"
-				   }
-	/getDiseaseURIsFromICDCodes:
-	post:
-	  queryParameters:
-		ICDCodeList:
-		  displayName: searchList
-		  type: JSON String Array
-		  description: List of ICD9 or ICD10 codes (can mix and match)
-		  example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"], "filterMethod":"NONE"}
-		  required: true
-		  responses:
-			200:
-			  body:
-				application/json
-				  example:
-					{
-					    "resultsList": [
-					        {
-					            "IcdLabel": "\"Other specified congenital anomalies\"@en",
-					            "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "Icd": "http://purl.bioontology.org/ontology/ICD9CM/759.89",
-					            "AssertionOrientation": "\"forward\"",
-					            "PathFamily": "\"mondo->snomed->NLM mappings->icd9\"",
-					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000127",
-					            "IcdCode": "\"759.89\"",
-					            "IcdVersion": "\"ICD9\"",
-					            "AssertedPredicate": "http://example.com/resource/mdbxr",
-					            "MondoLabel": "\"geleophysic dysplasia\""
-					        },
-					        {
-					            "IcdLabel": "\"Congenital iodine-deficiency syndrome\"@en",
-					            "congenital": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "Icd": "http://purl.bioontology.org/ontology/ICD10CM/E00",
-					            "AssertionOrientation": "\"forward\"",
-					            "PathFamily": "\"mondo->snomed->CUI->icd\"",
-					            "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
-					            "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0018612",
-					            "IcdCode": "\"E00\"",
-					            "IcdVersion": "\"ICD10\"",
-					            "AssertedPredicate": "http://example.com/resource/mdbxr",
-					            "MondoLabel": "\"congenital hypothyroidism\""
-        					},
-        					...
-					    ]
-					}
-			400:
-			  body:
-				application/json:
-				  example:
-				   {
-					 "message": "Unable to parse JSON"
-				   }
-	/getSemanticContextForDiseaseURIs:
-    post:
-      description: get graph context for a list of disease iri values.  Returns a list of triples.
-      queryParameters:
-		  displayName: searchList
-		  type: JSON String Array
-		  description: List of MONDO URI representing diseases
-		  example: {"searchList":["http://purl.obolibrary.org/obo/MONDO_0005002","http://purl.obolibrary.org/obo/MONDO_0011751"]}
-		  required: true
-      responses:
-        200:
-          body:
-            example: |
-			{
-			    "resultsList": [
-			        [
-			            "http://purl.obolibrary.org/obo/MONDO_0005002",
-			            "http://www.w3.org/2000/01/rdf-schema#subClassOf",
-			            "http://purl.obolibrary.org/obo/MONDO_0002567"
-			        ],
-			        [
-			            "http://purl.obolibrary.org/obo/MONDO_0002567",
-			            "http://www.w3.org/2000/01/rdf-schema#subClassOf",
-			            "http://purl.obolibrary.org/obo/MONDO_0000270"
-			        ],
-			        [
-			            "http://purl.obolibrary.org/obo/MONDO_0005002",
-			            "http://graphBuilder.org/mapsTo",
-			            "http://purl.bioontology.org/ontology/ICD9CM/491.21"
-			        ],
-			        [
-			            "http://purl.bioontology.org/ontology/ICD9CM/491.21",
-			            "http://www.w3.org/2004/02/skos/core#prefLabel",
-			            "\"Obstructive chronic bronchitis with (acute) exacerbation\"@en"
-			        ],
-			        [
-			            "http://purl.bioontology.org/ontology/ICD9CM/491.21",
-			            "http://www.w3.org/2004/02/skos/core#notation",
-			            "\"491.21\""
-			        ],
-                ...
-              }
+    /diagnosisTextSearch:
+      post:
+        queryParameters:
+          freeTextSearchTerm:
+            displayName: searchTerm
+            type: JSON String
+            description: free text input to be mapped to a set of potentially matching ontology disease terms
+            example: {"searchTerm":"diabetes"}
+            required: true
+          repsonses:
+            200:
+              body:
+                application/json
+                  example:
+                    {
+                      "searchTerm": "diabetes",
+                      "searchResults": [
+                          {
+                            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005406",
+                            "label": "gestational diabetes"
+                          },
+                          {
+                            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005015",
+                            "label": "diabetes mellitus (disease)"
+                          },
+                          {
+                            "IRI": "http://purl.obolibrary.org/obo/MONDO_0005827",
+                            "label": "lipoatrophic diabetes"
+                          },
+                        ...
+                        ]
+                    },
+            204:
+              header:
+                message:Your input of "notADisease" returned no matches.
+            400:
+              body:
+                application/json:
+                  example:
+                    {
+                      "message": "Unable to parse JSON"
+                    }
+    /getICDCodesFromDiseaseURI:
+      post:
+        queryParameters:
+          URISearchTerm:
+            displayName: searchTerm
+            type: JSON String
+            description: MONDO URI representing a disease
+            example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992", "filterMethod":"LEAF"}
+            required: true
+          responses:
+            200:
+              body:
+                application/json
+                  example:
+                    {
+                        "resultsList": [
+                            {
+                                "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
+                                "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
+                                "AssertionOrientation": "\"forward\"",
+                                "PathFamily": "\"mondo->snomed->CUI->icd\"",
+                                "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
+                                "IcdCode": "\"D02.2\"",
+                                "IcdVersion": "\"ICD10\"",
+                                "AssertedPredicate": "http://example.com/resource/mdbxr",
+                                "MondoLabel": "\"bronchus carcinoma in situ\""
+                            },
+                            {
+                                "IcdLabel": "\"Carcinoma in situ of bronchus and lung\"@en",
+                                "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "Icd": "http://purl.bioontology.org/ontology/ICD10CM/D02.2",
+                                "AssertionOrientation": "\"forward\"",
+                                "PathFamily": "\"mondo->snomed->CUI->icd\"",
+                                "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "rare": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000375",
+                                "IcdCode": "\"D02.2\"",
+                                "IcdVersion": "\"ICD10\"",
+                                "AssertedPredicate": "http://www.w3.org/2002/07/owl#equivalentClass",
+                                "MondoLabel": "\"bronchus carcinoma in situ\""
+                            },
+                            ...
+                        ]
+                    }
+            400:
+              body:
+                application/json:
+                  example:
+                   {
+                     "message": "Unable to parse JSON"
+                   }
+    /getDiseaseURIsFromICDCodes:
+      post:
+        queryParameters:
+          ICDCodeList:
+            displayName: searchList
+            type: JSON String Array
+            description: List of ICD9 or ICD10 codes (can mix and match)
+            example: {"searchList":["http://purl.bioontology.org/ontology/ICD9CM/759.89","http://purl.bioontology.org/ontology/ICD10CM/E00"], "filterMethod":"NONE"}
+            required: true
+          responses:
+            200:
+              body:
+                application/json
+                  example:
+                    {
+                        "resultsList": [
+                            {
+                                "IcdLabel": "\"Other specified congenital anomalies\"@en",
+                                "congenital": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "Icd": "http://purl.bioontology.org/ontology/ICD9CM/759.89",
+                                "AssertionOrientation": "\"forward\"",
+                                "PathFamily": "\"mondo->snomed->NLM mappings->icd9\"",
+                                "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0000127",
+                                "IcdCode": "\"759.89\"",
+                                "IcdVersion": "\"ICD9\"",
+                                "AssertedPredicate": "http://example.com/resource/mdbxr",
+                                "MondoLabel": "\"geleophysic dysplasia\""
+                            },
+                            {
+                                "IcdLabel": "\"Congenital iodine-deficiency syndrome\"@en",
+                                "congenital": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "Icd": "http://purl.bioontology.org/ontology/ICD10CM/E00",
+                                "AssertionOrientation": "\"forward\"",
+                                "PathFamily": "\"mondo->snomed->CUI->icd\"",
+                                "syndromic": "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "rare": "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>",
+                                "MondoTerm": "http://purl.obolibrary.org/obo/MONDO_0018612",
+                                "IcdCode": "\"E00\"",
+                                "IcdVersion": "\"ICD10\"",
+                                "AssertedPredicate": "http://example.com/resource/mdbxr",
+                                "MondoLabel": "\"congenital hypothyroidism\""
+                            },
+                            ...
+                        ]
+                    }
+            400:
+              body:
+                application/json:
+                  example:
+                   {
+                     "message": "Unable to parse JSON"
+                   }
+    /getSemanticContextForDiseaseURIs:
+      post:
+        description: get graph context for a list of disease iri values.  Returns a list of triples.
+        queryParameters:
+          displayName: searchList
+          type: JSON String Array
+          description: List of MONDO URI representing diseases
+          example: {"searchList":["http://purl.obolibrary.org/obo/MONDO_0005002","http://purl.obolibrary.org/obo/MONDO_0011751"]}
+          required: true
+        responses:
+          200:
+            body:
+              example: |
+              {
+                  "resultsList": [
+                      [
+                          "http://purl.obolibrary.org/obo/MONDO_0005002",
+                          "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+                          "http://purl.obolibrary.org/obo/MONDO_0002567"
+                      ],
+                      [
+                          "http://purl.obolibrary.org/obo/MONDO_0002567",
+                          "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+                          "http://purl.obolibrary.org/obo/MONDO_0000270"
+                      ],
+                      [
+                          "http://purl.obolibrary.org/obo/MONDO_0005002",
+                          "http://graphBuilder.org/mapsTo",
+                          "http://purl.bioontology.org/ontology/ICD9CM/491.21"
+                      ],
+                      [
+                          "http://purl.bioontology.org/ontology/ICD9CM/491.21",
+                          "http://www.w3.org/2004/02/skos/core#prefLabel",
+                          "\"Obstructive chronic bronchitis with (acute) exacerbation\"@en"
+                      ],
+                      [
+                          "http://purl.bioontology.org/ontology/ICD9CM/491.21",
+                          "http://www.w3.org/2004/02/skos/core#notation",
+                          "\"491.21\""
+                      ],
+                      ...
+                  ]
+            }
+    /getGraphMlContextForDiseaseURI:
+      post:
+        queryParameters:
+          displayName: searchTerm
+            type: JSON String
+            description: MONDO URI representing a disease
+            example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0016254"}
+            required: true
+        responses:
+            200:
+              body:
+                text/xml:
+                  example: |
+                  <?xml version="1.0" encoding="UTF-8"?>
+                  <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+                      <key id="skos__prefLabel" for="node" attr.name="skos__prefLabel"/>
+                      <key id="umls__cui" for="node" attr.name="umls__cui"/>
+                      <key id="umls__tui" for="node" attr.name="umls__tui"/>
+                      <key id="oboInOwl__id" for="node" attr.name="oboInOwl__id"/>
+                      <key id="rdfs__seeAlso" for="node" attr.name="rdfs__seeAlso"/>
+                      <key id="icd10__ORDER_NO" for="node" attr.name="icd10__ORDER_NO"/>
+                      <key id="rdfs__label" for="node" attr.name="rdfs__label"/>
+                      <key id="label" for="node" attr.name="label"/>
+                      <key id="skos__notation" for="node" attr.name="skos__notation"/>
+                      <key id="uri" for="node" attr.name="uri"/>
+                      <key id="oboInOwl__hasDbXref" for="node" attr.name="oboInOwl__hasDbXref"/>
+                      <key id="label" for="edge" attr.name="label"/>
+                      <graph id="G" edgedefault="directed">
+                          <node id="n21062" labels=":Resource:graphBuilder__icd10Class:owl__Class">
+                              <data key="labels">:Resource:graphBuilder__icd10Class:owl__Class</data>
+                              <data key="umls__cui">C0007103</data>
+                              <data key="umls__tui">T191</data>
+                              <data key="skos__prefLabel">Malignant neoplasm of endometrium</data>
+                              <data key="uri">http://purl.bioontology.org/ontology/ICD10CM/C54.1</data>
+                              <data key="icd10__ORDER_NO">01898</data>
+                              <data key="skos__notation">C54.1</data>
+                          </node>
+                          <node id="n151646" labels=":Resource:graphBuilder__mondoDiseaseClass:owl__Class">
+                              <data key="labels">:Resource:graphBuilder__mondoDiseaseClass:owl__Class</data>
+                              <data key="oboInOwl__id">MONDO:0016254</data>
+                              <data key="oboInOwl__hasDbXref">UMLS:CN201043</data>
+                              <data key="uri">http://purl.obolibrary.org/obo/MONDO_0016254</data>
+                              <data key="rdfs__label">rare variants of adenocarcinoma of the corpus uteri</data>
+                              <data key="rdfs__seeAlso">https://github.com/monarch-initiative/mondo/issues/254</data>
+                          </node>
+                          <edge id="e114086" source="n21062" target="n21062" label="rdfs__subClassOf">
+                              <data key="label">rdfs__subClassOf</data>
+                          </edge>
+                          <edge id="e1080555" source="n151646" target="n151646" label="rdfs__subClassOf">
+                              <data key="label">rdfs__subClassOf</data>
+                          </edge>
+                          <edge id="e3752801" source="n151646" target="n21062" label="mydata__mdbxr">
+                              <data key="label">mydata__mdbxr</data>
+                          </edge>
+                      </graph>
+                  </graphml>
+            400:
+              body:
+                application/json:
+                  example: |
+                    {
+                        "message": "requirement failed: 'FOOBARZZZ.obolibrary.org/obo/MONDO_0016254' is not a correctly formed MONDO url"
+                    }
+            503:
+              body:
+                application/json:
+                  example: |
+                    {
+                        "message": "Unable to connect to silt.pmacs.upenn.edu:7687, ensure the database is running and that there is a working network connection to it."
+                    }
+
 /ontologies:
-	/getUriFromOmopConceptId:
-	post:
-	  queryParameters:
-		omopIntegerId:
-		  displayName:searchTerm
-		  type: JSON String
-		  description: OMOP concept ID
-		  example: {"searchTerm":"3036277"}
-		  required:true
-		  responses:
-			200:
-			  body:
-				application/json:
-				  example:
-				  {
-					"result": "http://purl.obolibrary.org/obo/IAO_0000408"
-				  }
-			400:
-			  body:
-				application/json:
-				  example:
-				   {
-					 "message": "The input received was not a valid integer"
-				   }
-			400:
-			  body:
-				application/json:
-				  example:
-				   {
-					 "message": "Did not receive any content in the request body"
-				   }
-	/getOmopConceptMap:
-	post:
-	  queryParameters:
-		None
-		response:
-		  200:
-			body:
-			  application/json
-				example:
-				  {
-					"result": {
-						"\"3036277\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000408",
-						"\"9546\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000008",
-						"\"3004410\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010154",
-						"\"3012888\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000000",
-						"\"8582\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000015",
-						"\"3004249\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000001",
-						"\"8840\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010153",
-						"\"8876\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000272",
-						"\"8554\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000187",
-						"\"3038553\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://www.ebi.ac.uk/efo/EFO_0004340",
-						"\"3025315\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000414",
-						"\"9531\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000086",
-						"\"9529\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000009"
-					  }
-				  }
-				  
+    /getUriFromOmopConceptId:
+      post:
+        queryParameters:
+          omopIntegerId:
+            displayName:searchTerm
+            type: JSON String
+            description: OMOP concept ID
+            example: {"searchTerm":"3036277"}
+            required:true
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                {
+                  "result": "http://purl.obolibrary.org/obo/IAO_0000408"
+                }
+          400:
+            body:
+              application/json:
+                example:
+                 {
+                   "message": "The input received was not a valid integer"
+                 }
+          400:
+            body:
+              application/json:
+                example:
+                 {
+                   "message": "Did not receive any content in the request body"
+                   }
+    /getOmopConceptMap:
+      post:
+        queryParameters:
+          None
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                    "result": {
+                        "\"3036277\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000408",
+                        "\"9546\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000008",
+                        "\"3004410\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010154",
+                        "\"3012888\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000000",
+                        "\"8582\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000015",
+                        "\"3004249\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/HTN_00000001",
+                        "\"8840\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://transformunify.org/ontologies/TURBO_0010153",
+                        "\"8876\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000272",
+                        "\"8554\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000187",
+                        "\"3038553\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://www.ebi.ac.uk/efo/EFO_0004340",
+                        "\"3025315\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/IAO_0000414",
+                        "\"9531\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000086",
+                        "\"9529\"^^<http://www.w3.org/2001/XMLSchema#integer>": "http://purl.obolibrary.org/obo/UO_0000009"
+                      }
+                  }

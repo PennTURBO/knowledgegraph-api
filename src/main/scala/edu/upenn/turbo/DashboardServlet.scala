@@ -41,7 +41,9 @@ import java.io.File
 import java.util.ArrayList
 
 import org.apache.solr.client.solrj._
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient
+
+import org.neo4j.driver.exceptions.ServiceUnavailableException
 
 case class GraphUpdateTime(dateOfUpdate: String, timeOfUpdate: String)
 case class MedFullNameInput(searchList: Map[String, Array[String]])
@@ -61,6 +63,7 @@ case class DrugHopsResults(resultsList: Map[String, Array[String]])
 case class DiagnosisCodeResult(searchTerm: String, resultsList: HashMap[String, ArrayBuffer[String]])
 case class TwoDimensionalArrListResults(resultsList: Array[Array[String]])
 case class ListOfStringToStringHashMapsResult(resultsList: Array[HashMap[String,String]])
+case class GraphMlResult(data: String)
 
 class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with DashboardProperties
 {
@@ -70,6 +73,7 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
   val medCxn = GraphDbConnection.getMedConnection()
   val ontCxn = GraphDbConnection.getOntConnection()
   val medMapCxn = GraphDbConnection.getMedMapConnection()
+  val neo4jCypherService = Neo4jCypherServiceHolder.getService()
 
   val logger = LoggerFactory.getLogger("turboAPIlogger")
 
@@ -334,6 +338,34 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
       catch
       {
           case e: RuntimeException => InternalServerError(Map("message" -> "There was a problem retrieving results from the triplestore."))
+      }
+  }
+
+  post("/diagnoses/getGraphMlContextForDiseaseURI")
+  {
+      logger.info("Recieved POST to /diagnoses/getGraphMlContextForDiseaseURI")
+
+      var parsedResult: String = null
+      try {
+          val userInput = request.body
+          val extractedResult = parse(userInput).extract[DiagnosisFreeText]
+          parsedResult = extractedResult.searchTerm
+          logger.info("search term: " + parsedResult)
+
+          neo4jCypherService.getDiseaseContextGraphMl(parsedResult) match {
+            case Some(i) => Ok(i, Map("Content-Type" -> "text/xml;charset=utf-8"))
+            case None => Ok("", Map("Content-Type" -> "text/xml;charset=utf-8"))
+          }
+      }
+      catch {
+          case e1: IllegalArgumentException => BadRequest(Map("message" -> e1.getMessage))
+          case e2: ServiceUnavailableException => ServiceUnavailable(Map("message" -> e2.getMessage))
+          case e3: Exception =>
+            {
+              logger.error("uncaught exception")
+              logger.error(e3.toString)
+              throw e3
+            }
       }
   }
 

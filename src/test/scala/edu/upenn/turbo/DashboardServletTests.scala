@@ -30,6 +30,14 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       val neo4jgraph = Neo4jGraph.open("neo4j.graph")
       Neo4jGraphConnection.setGraph(neo4jgraph)*/
 
+      println("setting up neo4j cypher service...")
+      val neo4jCypherService = new Neo4jCypherService(
+        getFromProperties("neo4j_url"), 
+        getFromProperties("neo4j_username"), 
+        getFromProperties("neo4j_password")
+      ) 
+      Neo4jCypherServiceHolder.setService(neo4jCypherService)
+
       println("connecting to graphDb repositories...")
 
       try { 
@@ -94,6 +102,8 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       
       /*val neo4jgraph = Neo4jGraphConnection.getGraph()
       neo4jgraph.close()*/
+
+      Neo4jCypherServiceHolder.getService().close()
 
       val diagRepoManager = GraphDbConnection.getDiagRepoManager()
       val diagRepository = GraphDbConnection.getDiagRepository()
@@ -346,20 +356,70 @@ class DashboardServletTests extends ScalatraFunSuite with BeforeAndAfterAll with
       }
   }
 
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with good params") 
+  {
+      val iri = "http://purl.obolibrary.org/obo/MONDO_0005149"
+      val parms = s"""{"searchTerm":"$iri"}"""
+
+      var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
+      var expectedInclude = """skos__notation"""
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (200)
+        body should include(expectedInclude)
+        body should include(iri)
+        body should startWith(expectedStart)
+      }
+  }
+
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with bad params") 
+  {
+      val iri = "http:???!?//purl.obolibrary.org/obo/MONDO_0005149"
+      val parms = s"""{"searchTerm":"$iri"}"""
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (400)
+      }
+  }
+
+  test("POST /diagnoses/getGraphMlContextForDiseaseURI with parm no results") 
+  {
+      val iri = "http://purl.obolibrary.org/obo/MONDO_NORESULTS"
+      val parms = s"""{"searchTerm":"$iri"}"""
+
+      var expectedStart = """<?xml version="1.0" encoding="UTF-8"?>"""
+      var expectedInclude = """skos__notation"""
+
+      val res = post("/diagnoses/getGraphMlContextForDiseaseURI", parms) {
+        status should equal (200)
+        //body should include("""{"graphMl":""}""")
+        assert(body.isEmpty)
+      }
+  }
+
   test("Medication SOLR query")
   {
-      println(s"connecting to solr at '$solrConnectionString'")
+      try {
+        println(s"connecting to solr at '$solrConnectionString'")
+        val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
+        val solrQuery = new SolrQuery()
+        solrQuery.set("q", "analgesic")
+        solrQuery.set("defType", "edismax")
+        solrQuery.set("qf", "medlabel tokens")
+        solrQuery.set("fl", "id medlabel score employment")
+        val response = solrClient.query(solrQuery)
+        val results = response.getResults()
+        assert(results.getNumFound() >= 1)
 
-      val solrClient = new HttpSolrClient.Builder(solrConnectionString).build()
-      val solrQuery = new SolrQuery()
-      solrQuery.set("q", "analgesic")
-      solrQuery.set("defType", "edismax")
-      solrQuery.set("qf", "medlabel tokens")
-      solrQuery.set("fl", "id medlabel score employment")
-      val response = solrClient.query(solrQuery)
-      val results = response.getResults()
-      println("results size: " + results.getNumFound())
+        println("results size: " + results.getNumFound())
 
-      assert(results.getNumFound() >= 1)
+      } catch {
+        case e: RuntimeException => 
+          {
+            println("ERROR: exception when initilizing solr connection")
+            println(e.toString)
+            throw e
+          }
+      }
   }
 }
