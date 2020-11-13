@@ -353,8 +353,8 @@ class DashboardServlet extends ScalatraServlet with JacksonJsonSupport with Dash
           logger.info("search term: " + parsedResult)
 
           neo4jCypherService.getDiseaseContextGraphMl(parsedResult) match {
-            case Some(i) => Ok(i)
-            case None => Ok("")
+            case Some(i) => Ok(i, Map("Content-Type" -> "text/xml;charset=utf-8"))
+            case None => Ok("", Map("Content-Type" -> "text/xml;charset=utf-8"))
           }
       }
       catch {

@@ -266,13 +266,70 @@ mediaType: application/json
           displayName: searchTerm
             type: JSON String
             description: MONDO URI representing a disease
-            example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0004992"}
+            example: {"searchTerm":"http://purl.obolibrary.org/obo/MONDO_0016254"}
             required: true
         responses:
             200:
               body:
-                application/xml:
+                text/xml:
                   example: |
+                  <?xml version="1.0" encoding="UTF-8"?>
+                  <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+                      <key id="skos__prefLabel" for="node" attr.name="skos__prefLabel"/>
+                      <key id="umls__cui" for="node" attr.name="umls__cui"/>
+                      <key id="umls__tui" for="node" attr.name="umls__tui"/>
+                      <key id="oboInOwl__id" for="node" attr.name="oboInOwl__id"/>
+                      <key id="rdfs__seeAlso" for="node" attr.name="rdfs__seeAlso"/>
+                      <key id="icd10__ORDER_NO" for="node" attr.name="icd10__ORDER_NO"/>
+                      <key id="rdfs__label" for="node" attr.name="rdfs__label"/>
+                      <key id="label" for="node" attr.name="label"/>
+                      <key id="skos__notation" for="node" attr.name="skos__notation"/>
+                      <key id="uri" for="node" attr.name="uri"/>
+                      <key id="oboInOwl__hasDbXref" for="node" attr.name="oboInOwl__hasDbXref"/>
+                      <key id="label" for="edge" attr.name="label"/>
+                      <graph id="G" edgedefault="directed">
+                          <node id="n21062" labels=":Resource:graphBuilder__icd10Class:owl__Class">
+                              <data key="labels">:Resource:graphBuilder__icd10Class:owl__Class</data>
+                              <data key="umls__cui">C0007103</data>
+                              <data key="umls__tui">T191</data>
+                              <data key="skos__prefLabel">Malignant neoplasm of endometrium</data>
+                              <data key="uri">http://purl.bioontology.org/ontology/ICD10CM/C54.1</data>
+                              <data key="icd10__ORDER_NO">01898</data>
+                              <data key="skos__notation">C54.1</data>
+                          </node>
+                          <node id="n151646" labels=":Resource:graphBuilder__mondoDiseaseClass:owl__Class">
+                              <data key="labels">:Resource:graphBuilder__mondoDiseaseClass:owl__Class</data>
+                              <data key="oboInOwl__id">MONDO:0016254</data>
+                              <data key="oboInOwl__hasDbXref">UMLS:CN201043</data>
+                              <data key="uri">http://purl.obolibrary.org/obo/MONDO_0016254</data>
+                              <data key="rdfs__label">rare variants of adenocarcinoma of the corpus uteri</data>
+                              <data key="rdfs__seeAlso">https://github.com/monarch-initiative/mondo/issues/254</data>
+                          </node>
+                          <edge id="e114086" source="n21062" target="n21062" label="rdfs__subClassOf">
+                              <data key="label">rdfs__subClassOf</data>
+                          </edge>
+                          <edge id="e1080555" source="n151646" target="n151646" label="rdfs__subClassOf">
+                              <data key="label">rdfs__subClassOf</data>
+                          </edge>
+                          <edge id="e3752801" source="n151646" target="n21062" label="mydata__mdbxr">
+                              <data key="label">mydata__mdbxr</data>
+                          </edge>
+                      </graph>
+                  </graphml>
+            400:
+              body:
+                application/json:
+                  example: |
+                    {
+                        "message": "requirement failed: 'FOOBARZZZ.obolibrary.org/obo/MONDO_0016254' is not a correctly formed MONDO url"
+                    }
+            503:
+              body:
+                application/json:
+                  example: |
+                    {
+                        "message": "Unable to connect to silt.pmacs.upenn.edu:7687, ensure the database is running and that there is a working network connection to it."
+                    }
 
 /ontologies:
     /getUriFromOmopConceptId:
