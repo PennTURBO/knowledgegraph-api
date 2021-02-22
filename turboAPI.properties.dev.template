@@ -1,0 +1,17 @@
+# triplestore URL
+serviceURL = http://turbo-dev-db01.pmacs.upenn.edu:7200/
+# username/password for triplestore
+username = your_username
+password = your_password
+# repository names
+medications_repository = medication-mapping-dev
+diagnoses_repository = DiagnosisKnowledgeGraph
+ontology_repository = TurboOntology
+medMap_ontology_repository = MedicationMappingOntology
+# solr
+solrURL = http://turbo-prd-app02:8983/
+solrCollection = medication-employment-labels-dev
+# neo4j
+neo4j_url = bolt://silt.pmacs.upenn.edu:7687
+neo4j_username = neo4j_username
+neo4j_password = neo4j_password
